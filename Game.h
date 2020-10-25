@@ -7,7 +7,7 @@ class Game
 {
 public:
 	enum class TileType {
-						regular_tile = 0,
+						tile = 0,
 						tile_1 = 1,
 						tile_2 = 2,
 						tile_3 = 3,
@@ -16,7 +16,8 @@ public:
 						tile_6 = 6,
 						tile_7 = 7, 
 						tile_8 = 8,
-						pressed_tile = 9
+						pressed_tile = 9,
+						bomb_time = 10
 						};
 	Game();
 	void Run();

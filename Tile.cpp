@@ -3,7 +3,7 @@
 Tile::Tile(int row, int column, int side_length): tile_(sf::Vector2f(static_cast<float>(side_length), static_cast<float>(side_length)))
 {
 
-	tile_.setPosition(column * side_length + column, row * side_length + row);
+	tile_.setPosition(column * side_length + 50, row * side_length + 50);
 }
 
 
