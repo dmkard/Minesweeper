@@ -29,7 +29,7 @@ public:
 private:
 	void LoadTileTextures();
 	void CreateGameField();
-	void InitializeBombs();
+	void InitializeBombs(const int& index);
 	void RevealTile(const int& index);
 	void RightMouseButtonPressed(const int & x_coord, const int& y_coord);
 	void LeftMouseButtonPressed(const int& x_coord, const int& y_coord);

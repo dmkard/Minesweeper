@@ -108,22 +108,9 @@ void Game::CreateGameField()
             tiles_.emplace_back(tile);
         }
     }
-
-    InitializeBombs();
-    
-    //loops for testing bomb initializetion
-    /*
-    for (int i = 0; i < board_rows_; ++i)
-    {
-        for (int j = 0; j < board_columns_; ++j)
-        {
-            if(tiles_[i * board_columns_ + j].isBomb())
-                tiles_[i*board_columns_+ j].setTexture(tile_textures_[static_cast<int>(TileType::pressed_tile)]);
-        }
-    }*/
 }
 
-void Game::InitializeBombs()
+void Game::InitializeBombs(const int& initial_index)
 {
     bomb_amount_ = 0;
     std::default_random_engine engine{};
@@ -135,17 +122,44 @@ void Game::InitializeBombs()
         int r_row = r_row_generator(engine);
         int r_column = r_columns_generator(engine);
         int index = r_row * board_columns_ + r_column; //calculate index in order to access to correct tile in vector of tiles
-        if (!tiles_[index].isBomb())
+
+        //this bool variable holds information if the index is in a tile radius around a pressed tile
+        //if so, this index have to be skipped, in order to initialize basic condition of the game properly
+        bool isAroundFirstTile = (  (index == initial_index + 1) ||
+                                    (index == initial_index - 1) ||
+                                    (index == initial_index + board_columns_) ||
+                                    (index == initial_index - board_columns_) ||
+                                    (index == initial_index + 1 + board_columns_) ||
+                                    (index == initial_index - 1 + board_columns_) ||
+                                    (index == initial_index + 1 - board_columns_) ||
+                                    (index == initial_index - 1 - board_columns_));
+
+        if (!isAroundFirstTile && !tiles_[index].isBomb())
         {
             tiles_[index].setBomb();
             ++bomb_amount_;
         }  
     }
+    //loops for testing bomb initializetion
+    /*
+    for (int i = 0; i < board_rows_; ++i)
+    {
+        for (int j = 0; j < board_columns_; ++j)
+        {
+            if (tiles_[i * board_columns_ + j].isBomb())
+                tiles_[i * board_columns_ + j].setTexture(tile_textures_[static_cast<int>(TileType::pressed_tile)]);
+        }
+    }*/
 }
 
 void Game::RevealTile(const int& index)
 {
-
+    //opening of the first tile on board start the game
+    if (!game_started_)
+    {
+        game_started_ = true;
+        InitializeBombs(index);
+    }
     tiles_[index].setTexture(tile_textures_[static_cast<int>(TileType::tile_3)]);
 }
 
