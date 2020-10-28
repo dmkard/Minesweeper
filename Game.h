@@ -2,6 +2,7 @@
 #include <SFML/Graphics.hpp>
 #include "Tile.h"
 #include <vector>
+#include <random>
 
 class Game
 {
@@ -17,7 +18,7 @@ public:
 						tile_7 = 7, 
 						tile_8 = 8,
 						pressed_tile = 9,
-						bomb_time = 10
+						bomb_tile = 10
 						};
 	Game();
 	void Run();
@@ -27,11 +28,14 @@ public:
 
 private:
 	void LoadTileTextures();
-	void CreateTiles(int  rows, int columns, int side_length);
-
+	void CreateGameField(int side_length);
+	void InitializeBombs();
 	sf::RenderWindow window_;
-	bool running_;
 	std::vector<sf::Texture> tile_textures_;
 	std::vector<Tile> tiles_;
+	short bomb_amount_;
+	bool running_;
+	short board_rows_;
+	short board_columns_;
 };
 
