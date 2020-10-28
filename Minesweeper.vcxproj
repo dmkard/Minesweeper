@@ -24,7 +24,7 @@
     <ProjectGuid>{d6f05be9-9a87-4f2a-b4e7-f9402bd4f797}</ProjectGuid>
     <RootNamespace>Minesweeper</RootNamespace>
     <WindowsTargetPlatformVersion>10.0</WindowsTargetPlatformVersion>
-    <ProjectName>Minesweeper C++</ProjectName>
+    <ProjectName>Minesweeper</ProjectName>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
@@ -151,6 +151,7 @@
     <ClCompile Include="Tile.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="Const.h" />
     <ClInclude Include="Game.h" />
     <ClInclude Include="Tile.h" />
   </ItemGroup>

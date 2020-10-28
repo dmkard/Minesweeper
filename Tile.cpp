@@ -1,12 +1,9 @@
 #include "Tile.h"
 
-Tile::Tile(int row, int column, int side_length): tile_(sf::Vector2f(static_cast<float>(side_length), static_cast<float>(side_length))),
+Tile::Tile(): tile_(sf::Vector2f(static_cast<float>(TILE_SIDE_SIZE), static_cast<float>(TILE_SIDE_SIZE))),
 													isBomb_{false},
-													state_{State::main}
-{
-
-	tile_.setPosition(column * side_length + 50, row * side_length + 50);
-}
+													state_{State::primary}
+{}
 
 
 void Tile::draw(sf::RenderTarget& target, sf::RenderStates states) const
@@ -17,4 +14,9 @@ void Tile::draw(sf::RenderTarget& target, sf::RenderStates states) const
 void Tile::setTexture(sf::Texture& texture)
 {
 	tile_.setTexture(&texture);
+}
+
+void Tile::setPosition(const sf::Vector2f& position)
+{
+	tile_.setPosition(position);
 }

@@ -28,14 +28,17 @@ public:
 
 private:
 	void LoadTileTextures();
-	void CreateGameField(int side_length);
+	void CreateGameField();
 	void InitializeBombs();
+	void RightMouseButtonPressed(int x_coord, int y_coord);
 	sf::RenderWindow window_;
 	std::vector<sf::Texture> tile_textures_;
 	std::vector<Tile> tiles_;
 	short bomb_amount_;
 	bool running_;
-	short board_rows_;
-	short board_columns_;
+	bool game_started_;
+	short board_rows_{ 16 };
+	short board_columns_{ 30 };
+	short margin_{ (W_WIDTH - 30 * TILE_SIDE_SIZE) / 2 };
 };
 
