@@ -30,7 +30,10 @@ private:
 	void LoadTileTextures();
 	void CreateGameField();
 	void InitializeBombs();
-	void RightMouseButtonPressed(int x_coord, int y_coord);
+	void RevealTile(const int& index);
+	void RightMouseButtonPressed(const int & x_coord, const int& y_coord);
+	void LeftMouseButtonPressed(const int& x_coord, const int& y_coord);
+	void LeftMouseButtonReleased(const int& x_coord, const int& y_coord);
 	sf::RenderWindow window_;
 	std::vector<sf::Texture> tile_textures_;
 	std::vector<Tile> tiles_;

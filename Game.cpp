@@ -43,6 +43,17 @@ void Game::HandleInput()
             if (event.mouseButton.button == sf::Mouse::Left)
             {
                 std::cout << "the left button was pressed" << std::endl;
+                LeftMouseButtonPressed(event.mouseButton.x, event.mouseButton.y);
+                std::cout << "mouse x: " << event.mouseButton.x << std::endl;
+                std::cout << "mouse y: " << event.mouseButton.y << std::endl;
+            }
+        }
+        if (event.type == sf::Event::MouseButtonReleased)
+        {
+            if (event.mouseButton.button == sf::Mouse::Left)
+            {
+                std::cout << "the left button was released" << std::endl;
+                LeftMouseButtonReleased(event.mouseButton.x, event.mouseButton.y);
                 std::cout << "mouse x: " << event.mouseButton.x << std::endl;
                 std::cout << "mouse y: " << event.mouseButton.y << std::endl;
             }
@@ -132,7 +143,13 @@ void Game::InitializeBombs()
     }
 }
 
-void Game::RightMouseButtonPressed(int x_coord, int y_coord)
+void Game::RevealTile(const int& index)
+{
+
+    tiles_[index].setTexture(tile_textures_[static_cast<int>(TileType::tile_3)]);
+}
+
+void Game::RightMouseButtonPressed(const int& x_coord, const int& y_coord)
 {
     int column = (x_coord - margin_) / TILE_SIDE_SIZE; 
     int row = (y_coord - margin_) / TILE_SIDE_SIZE;
@@ -152,5 +169,44 @@ void Game::RightMouseButtonPressed(int x_coord, int y_coord)
             tiles_[index].changeTileState(Tile::State::primary);
         }
     }
-    
+}
+
+void Game::LeftMouseButtonPressed(const int& x_coord, const int& y_coord)
+{
+    int column = (x_coord - margin_) / TILE_SIDE_SIZE;
+    int row = (y_coord - margin_) / TILE_SIDE_SIZE;
+
+    if ((column >= 0 && column < board_columns_)
+        && (row >= 0 && row < board_rows_))
+    {
+        int index = row * board_columns_ + column;
+        if (tiles_[index].state() == Tile::State::primary)
+        {
+            tiles_[index].setTexture(tile_textures_[static_cast<int>(TileType::pressed_tile)]);
+            tiles_[index].changeTileState(Tile::State::pressed);
+        }     
+    }
+}
+
+void Game::LeftMouseButtonReleased(const int& x_coord, const int& y_coord)
+{
+    int column = (x_coord - margin_) / TILE_SIDE_SIZE;
+    int row = (y_coord - margin_) / TILE_SIDE_SIZE;
+    int index = row * board_columns_ + column;
+
+    //checking for out of board and if a tile is pressed, in order to finish sequence: pressed->released
+    if ((column >= 0 && column < board_columns_)
+        && (row >= 0 && row < board_rows_)
+        && (tiles_[index].state() == Tile::State::pressed))
+    {
+        RevealTile(index);
+    }
+    else//one tile was pressed, so program have to find it in order to finish sequence: pressed->released
+    {
+        for (unsigned  i = 0; i < tiles_.size(); ++i)
+        {
+            if (tiles_[i].state() == Tile::State::pressed)
+                RevealTile(i);
+        }
+    }
 }

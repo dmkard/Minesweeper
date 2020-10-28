@@ -7,7 +7,7 @@
 class Tile : public sf::Drawable
 {
 public:
-	enum class State{primary = 1, flagged, opened};
+	enum class State{primary = 1, flagged, opened, pressed};
 	Tile();
 	virtual void draw(sf::RenderTarget& target, sf::RenderStates states) const;
 	virtual void setTexture(sf::Texture& texture);
