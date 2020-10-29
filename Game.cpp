@@ -3,15 +3,15 @@
 Game::Game() :  running_{ false },
                 game_started_{false},
                 window_(sf::VideoMode(W_WIDTH, W_HEIGHT), "Minesweeper"), 
-                bomb_amount_{ 0 }
+                mine_amount_{ 0 }
 {
-    LoadTileTextures();
+    loadTileTextures();
 }
-
+//A funtion with game loop
 void Game::Run()
 {
     running_ = true;
-    CreateGameField();
+    createGameField();
     while (running_)
     {
         HandleInput();
@@ -36,14 +36,14 @@ void Game::HandleInput()
             if (event.mouseButton.button == sf::Mouse::Right)
             {
                 std::cout << "the right button was pressed" << std::endl;
-                RightMouseButtonPressed(event.mouseButton.x, event.mouseButton.y);
+                rightMouseButtonPressed(event.mouseButton.x, event.mouseButton.y);
                 std::cout << "mouse x: " << event.mouseButton.x << std::endl;
                 std::cout << "mouse y: " << event.mouseButton.y << std::endl;
             }
             if (event.mouseButton.button == sf::Mouse::Left)
             {
                 std::cout << "the left button was pressed" << std::endl;
-                LeftMouseButtonPressed(event.mouseButton.x, event.mouseButton.y);
+                leftMouseButtonPressed(event.mouseButton.x, event.mouseButton.y);
                 std::cout << "mouse x: " << event.mouseButton.x << std::endl;
                 std::cout << "mouse y: " << event.mouseButton.y << std::endl;
             }
@@ -53,7 +53,7 @@ void Game::HandleInput()
             if (event.mouseButton.button == sf::Mouse::Left)
             {
                 std::cout << "the left button was released" << std::endl;
-                LeftMouseButtonReleased(event.mouseButton.x, event.mouseButton.y);
+                leftMouseButtonReleased(event.mouseButton.x, event.mouseButton.y);
                 std::cout << "mouse x: " << event.mouseButton.x << std::endl;
                 std::cout << "mouse y: " << event.mouseButton.y << std::endl;
             }
@@ -73,7 +73,8 @@ void Game::Render()
     window_.display();
 }
 
-void Game::LoadTileTextures()
+//A function loads all tile textures to vector with textures
+void Game::loadTileTextures()
 {
     sf::Texture texture;
     texture.loadFromFile("resources/pictures/tile.png");
@@ -86,11 +87,12 @@ void Game::LoadTileTextures()
     texture.loadFromFile("resources/pictures/pressed_tile.png");
     tile_textures_.emplace_back(texture);
 
-    texture.loadFromFile("resources/pictures/bomb_tile.png");
+    texture.loadFromFile("resources/pictures/flagged_tile.png");
     tile_textures_.emplace_back(texture);
 }
 
-void Game::CreateGameField()
+//A function create board_rows_*board_columns_ tiles
+void Game::createGameField()
 {
     //it creates tiles and sets default texture to each of them
     for (int i = 0; i < board_rows_; ++i)
@@ -110,14 +112,15 @@ void Game::CreateGameField()
     }
 }
 
-void Game::InitializeBombs(const int& initial_index)
+//A function randomly sets 99 Mine on early created tites
+void Game::initializeMine(const int& initial_index)
 {
-    bomb_amount_ = 0;
+    mine_amount_ = 0;
     std::default_random_engine engine{};
     std::uniform_int_distribution<int> r_row_generator(0,board_rows_-1);
     std::uniform_int_distribution<int> r_columns_generator(0, board_columns_-1);
 
-    while (bomb_amount_ < 99)
+    while (mine_amount_ < 99)
     {
         int r_row = r_row_generator(engine);
         int r_column = r_columns_generator(engine);
@@ -134,10 +137,10 @@ void Game::InitializeBombs(const int& initial_index)
                                     (index == initial_index + 1 - board_columns_) ||
                                     (index == initial_index - 1 - board_columns_));
 
-        if (!isAroundFirstTile && !tiles_[index].isBomb())
+        if (!isAroundFirstTile && !tiles_[index].isMine())
         {
-            tiles_[index].setBomb();
-            ++bomb_amount_;
+            tiles_[index].setMine();
+            ++mine_amount_;
         }  
     }
     //loops for testing bomb initializetion
@@ -146,24 +149,27 @@ void Game::InitializeBombs(const int& initial_index)
     {
         for (int j = 0; j < board_columns_; ++j)
         {
-            if (tiles_[i * board_columns_ + j].isBomb())
+            if (tiles_[i * board_columns_ + j].isMine())
                 tiles_[i * board_columns_ + j].setTexture(tile_textures_[static_cast<int>(TileType::pressed_tile)]);
         }
     }*/
 }
 
-void Game::RevealTile(const int& index)
+//A function reveal tile after a left mouse button click
+void Game::revealTile(const int& index)
 {
     //opening of the first tile on board start the game
     if (!game_started_)
     {
         game_started_ = true;
-        InitializeBombs(index);
+        initializeMine(index);
+        countAmountMineNear();
     }
     tiles_[index].setTexture(tile_textures_[static_cast<int>(TileType::tile_3)]);
 }
 
-void Game::RightMouseButtonPressed(const int& x_coord, const int& y_coord)
+//A function changes state and texture after right mousebuttonpressed event
+void Game::rightMouseButtonPressed(const int& x_coord, const int& y_coord)
 {
     int column = (x_coord - margin_) / TILE_SIDE_SIZE; 
     int row = (y_coord - margin_) / TILE_SIDE_SIZE;
@@ -174,7 +180,7 @@ void Game::RightMouseButtonPressed(const int& x_coord, const int& y_coord)
         int index = row * board_columns_ + column;
         if (tiles_[index].state() == Tile::State::primary)
         {
-            tiles_[index].setTexture(tile_textures_[static_cast<int>(TileType::bomb_tile)]);
+            tiles_[index].setTexture(tile_textures_[static_cast<int>(TileType::flagged_tile)]);
             tiles_[index].changeTileState(Tile::State::flagged);
         }
         else if (tiles_[index].state() == Tile::State::flagged)
@@ -185,7 +191,8 @@ void Game::RightMouseButtonPressed(const int& x_coord, const int& y_coord)
     }
 }
 
-void Game::LeftMouseButtonPressed(const int& x_coord, const int& y_coord)
+//A function changes state and texture on tile after left mousebutttonpressed event
+void Game::leftMouseButtonPressed(const int& x_coord, const int& y_coord)
 {
     int column = (x_coord - margin_) / TILE_SIDE_SIZE;
     int row = (y_coord - margin_) / TILE_SIDE_SIZE;
@@ -202,7 +209,9 @@ void Game::LeftMouseButtonPressed(const int& x_coord, const int& y_coord)
     }
 }
 
-void Game::LeftMouseButtonReleased(const int& x_coord, const int& y_coord)
+//A function changes state of a tile and reveal it after left mousebutttonreleasef event
+//but if user will move mouse to another tile after pressing on some tile, pressed one will be revealed 
+void Game::leftMouseButtonReleased(const int& x_coord, const int& y_coord)
 {
     int column = (x_coord - margin_) / TILE_SIDE_SIZE;
     int row = (y_coord - margin_) / TILE_SIDE_SIZE;
@@ -213,14 +222,22 @@ void Game::LeftMouseButtonReleased(const int& x_coord, const int& y_coord)
         && (row >= 0 && row < board_rows_)
         && (tiles_[index].state() == Tile::State::pressed))
     {
-        RevealTile(index);
+        revealTile(index);
     }
     else//one tile was pressed, so program have to find it in order to finish sequence: pressed->released
     {
         for (unsigned  i = 0; i < tiles_.size(); ++i)
         {
             if (tiles_[i].state() == Tile::State::pressed)
-                RevealTile(i);
+                revealTile(i);
         }
+    }
+}
+
+void Game::countAmountMineNear()
+{
+    for (unsigned i = 0; i < tiles_.size(); ++i)
+    {
+
     }
 }

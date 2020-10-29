@@ -1,8 +1,9 @@
 #include "Tile.h"
 
 Tile::Tile(): tile_(sf::Vector2f(static_cast<float>(TILE_SIDE_SIZE), static_cast<float>(TILE_SIDE_SIZE))),
-													isBomb_{false},
-													state_{State::primary}
+													isMine_{false},
+													state_{State::primary},
+													amount_mine_near_{0}
 {}
 
 

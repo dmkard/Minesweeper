@@ -18,7 +18,7 @@ public:
 						tile_7 = 7, 
 						tile_8 = 8,
 						pressed_tile = 9,
-						bomb_tile = 10
+						flagged_tile = 10
 						};
 	Game();
 	void Run();
@@ -27,17 +27,18 @@ public:
 	void Render();
 
 private:
-	void LoadTileTextures();
-	void CreateGameField();
-	void InitializeBombs(const int& index);
-	void RevealTile(const int& index);
-	void RightMouseButtonPressed(const int & x_coord, const int& y_coord);
-	void LeftMouseButtonPressed(const int& x_coord, const int& y_coord);
-	void LeftMouseButtonReleased(const int& x_coord, const int& y_coord);
+	void loadTileTextures();
+	void createGameField();
+	void initializeMine(const int& index);
+	void revealTile(const int& index);
+	void rightMouseButtonPressed(const int & x_coord, const int& y_coord);
+	void leftMouseButtonPressed(const int& x_coord, const int& y_coord);
+	void leftMouseButtonReleased(const int& x_coord, const int& y_coord);
+	void countAmountMineNear();
 	sf::RenderWindow window_;
 	std::vector<sf::Texture> tile_textures_;
 	std::vector<Tile> tiles_;
-	short bomb_amount_;
+	short mine_amount_;
 	bool running_;
 	bool game_started_;
 	short board_rows_{ 16 };
