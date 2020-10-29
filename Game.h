@@ -35,6 +35,7 @@ private:
 	void leftMouseButtonPressed(const int& x_coord, const int& y_coord);
 	void leftMouseButtonReleased(const int& x_coord, const int& y_coord);
 	void countAmountMineNear();
+	bool isValidTile(const int& x, const int& y) const;
 	sf::RenderWindow window_;
 	std::vector<sf::Texture> tile_textures_;
 	std::vector<Tile> tiles_;

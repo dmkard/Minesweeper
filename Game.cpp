@@ -137,22 +137,14 @@ void Game::initializeMine(const int& initial_index)
                                     (index == initial_index + 1 - board_columns_) ||
                                     (index == initial_index - 1 - board_columns_));
 
-        if (!isAroundFirstTile && !tiles_[index].isMine())
+        if (!isAroundFirstTile && !tiles_[index].hasMine())
         {
             tiles_[index].setMine();
             ++mine_amount_;
         }  
     }
-    //loops for testing bomb initializetion
-    /*
-    for (int i = 0; i < board_rows_; ++i)
-    {
-        for (int j = 0; j < board_columns_; ++j)
-        {
-            if (tiles_[i * board_columns_ + j].isMine())
-                tiles_[i * board_columns_ + j].setTexture(tile_textures_[static_cast<int>(TileType::pressed_tile)]);
-        }
-    }*/
+    //loops for testing bomb initialization
+
 }
 
 //A function reveal tile after a left mouse button click
@@ -164,6 +156,14 @@ void Game::revealTile(const int& index)
         game_started_ = true;
         initializeMine(index);
         countAmountMineNear();
+        
+        for (unsigned i = 0; i < tiles_.size(); ++i)
+        {
+            if (tiles_[i].hasMine())
+                tiles_[i].setTexture(tile_textures_[static_cast<int>(TileType::pressed_tile)]);
+            else
+                tiles_[i].setTexture(tile_textures_[tiles_[i].amountBombNear()]);
+        }
     }
     tiles_[index].setTexture(tile_textures_[static_cast<int>(TileType::tile_3)]);
 }
@@ -234,10 +234,82 @@ void Game::leftMouseButtonReleased(const int& x_coord, const int& y_coord)
     }
 }
 
+
+
 void Game::countAmountMineNear()
 {
-    for (unsigned i = 0; i < tiles_.size(); ++i)
+    int index{};
+    for (int i = 0; i < board_rows_; ++i)
     {
+        for (int j = 0; j < board_columns_; ++j)
+        {
+            index = i * board_columns_ + j;
+            if (tiles_[index].hasMine())
+            {
 
+                if (isValidTile(j - 1, i - 1)) //NORTH-EAST
+                {
+                    index = (i - 1) * board_columns_ + (j - 1);
+                    if (!tiles_[index].hasMine())
+                        tiles_[index].increaseBombNear();
+                }
+
+                if (isValidTile(j, i - 1)) //NORTH
+                {
+                    index = (i - 1) * board_columns_ + j;
+                    if (!tiles_[index].hasMine())
+                        tiles_[index].increaseBombNear();
+                }
+
+                if (isValidTile(j + 1, i - 1)) // NORTH-WEST
+                {
+                    index = (i - 1) * board_columns_ + (j + 1);
+                    if (!tiles_[index].hasMine())
+                        tiles_[index].increaseBombNear();
+                }
+
+                if (isValidTile(j + 1, i)) //WEST
+                {
+                    index = i * board_columns_ + (j + 1);
+                    if (!tiles_[index].hasMine())
+                        tiles_[index].increaseBombNear();
+                }
+
+                if (isValidTile(j + 1, i + 1)) //SOUTH-WEST
+                {
+                    index = (i + 1) * board_columns_ + (j + 1);
+                    if (!tiles_[index].hasMine())
+                        tiles_[index].increaseBombNear();
+                }
+
+                if (isValidTile(j, i + 1)) //SOUTH
+                {
+                    index = (i + 1) * board_columns_ + j;
+                    if (!tiles_[index].hasMine())
+                        tiles_[index].increaseBombNear();
+                }
+
+                if (isValidTile(j - 1, i + 1)) // SOUTH-EAST
+                {
+                    index = (i + 1) * board_columns_ + (j - 1);
+                    if (!tiles_[index].hasMine())
+                        tiles_[index].increaseBombNear();
+                }
+
+                if (isValidTile(j - 1, i)) //EAST
+                {
+                    index = i * board_columns_ + (j - 1);
+                    if (!tiles_[index].hasMine())
+                        tiles_[index].increaseBombNear();
+                }
+                
+            }
+        }
     }
+}
+
+bool Game::isValidTile(const int& x, const int& y) const
+{
+    return x >=0 && x < board_columns_ &&
+            y>=0 && y < board_rows_;
 }
