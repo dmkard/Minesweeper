@@ -29,13 +29,16 @@ public:
 private:
 	void loadTileTextures();
 	void createGameField();
-	void initializeMine(const int& index);
-	void revealTile(const int& index);
-	void rightMouseButtonPressed(const int & x_coord, const int& y_coord);
-	void leftMouseButtonPressed(const int& x_coord, const int& y_coord);
-	void leftMouseButtonReleased(const int& x_coord, const int& y_coord);
+	void initializeMine(const sf::Vector2i& startGridCoord);
+	void revealTile(const sf::Vector2i& tileGridCoord);
+	bool isValidGridCoord(const sf::Vector2i& tileGridCoord);
+	sf::Vector2i coordToGridCoord(const sf::Vector2i& coord);
+	void rightMouseButtonPressed(const sf::Vector2i& eventCoord);
+	void leftMouseButtonPressed(const sf::Vector2i& eventCoord);
+	void leftMouseButtonReleased(const sf::Vector2i& eventCoord);
 	void countAmountMineNear();
-	Tile& tileAt(sf::Vector2i gridCoord);
+	Tile& tileAt(sf::Vector2i& gridCoord);
+	Tile& tileAt(const sf::Vector2i& gridCoord);
 	sf::RenderWindow window_;
 	std::vector<sf::Texture> tile_textures_;
 	std::vector<Tile> tiles_;
