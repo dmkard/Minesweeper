@@ -12,12 +12,14 @@ public:
 	virtual void draw(sf::RenderTarget& target, sf::RenderStates states) const;
 	virtual void setTexture(sf::Texture& texture);
 	virtual void setPosition(const sf::Vector2f& position);
-	bool hasMine() { return hasMine_; }
-	void changeTileState(State state) { state_ = state; }
-	void setMine() { hasMine_ = true; }
-	State state() { return state_; }
-	void increaseBombNear() { ++amount_mine_near_; }
-	int8_t amountBombNear() { return amount_mine_near_; }
+
+	bool hasMine();
+	void changeTileState(State state);
+	void setMine();
+	State state();
+	void increaseBombNear();
+	int8_t amountBombNear();
+	Tile& at(sf::Vector2i gridCoord);
 private:
 	
 	sf::RectangleShape tile_;

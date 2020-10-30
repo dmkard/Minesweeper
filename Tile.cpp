@@ -21,3 +21,38 @@ void Tile::setPosition(const sf::Vector2f& position)
 {
 	tile_.setPosition(position);
 }
+
+bool Tile::hasMine()
+{
+	return hasMine_;
+}
+
+void Tile::changeTileState(State state)
+{
+	state_ = state;
+}
+
+void Tile::setMine()
+{
+	hasMine_ = true;
+}
+
+Tile::State Tile::state()
+{
+	 return state_;
+}
+
+void Tile::increaseBombNear()
+{
+	++amount_mine_near_;
+}
+
+int8_t Tile::amountBombNear()
+{
+	return amount_mine_near_;
+}
+
+Tile& Tile::at(sf::Vector2i gridCoord)
+{
+	return *this;
+}

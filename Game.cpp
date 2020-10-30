@@ -1,5 +1,8 @@
 #include "Game.h"
 #include "Const.h"
+#include <cassert>
+#include <algorithm>
+#include <chrono>
 Game::Game() :  running_{ false },
                 game_started_{false},
                 window_(sf::VideoMode(W_WIDTH, W_HEIGHT), "Minesweeper"), 
@@ -133,8 +136,8 @@ void Game::initializeMine(const int& initial_index)
                                     (index == initial_index + board_columns_) ||
                                     (index == initial_index - board_columns_) ||
                                     (index == initial_index + 1 + board_columns_) ||
-                                    (index == initial_index - 1 + board_columns_) ||
                                     (index == initial_index + 1 - board_columns_) ||
+                                    (index == initial_index - 1 + board_columns_) ||
                                     (index == initial_index - 1 - board_columns_));
 
         if (!isAroundFirstTile && !tiles_[index].hasMine())
@@ -143,8 +146,6 @@ void Game::initializeMine(const int& initial_index)
             ++mine_amount_;
         }  
     }
-    //loops for testing bomb initialization
-
 }
 
 //A function reveal tile after a left mouse button click
@@ -155,7 +156,14 @@ void Game::revealTile(const int& index)
     {
         game_started_ = true;
         initializeMine(index);
+        auto start = std::chrono::high_resolution_clock::now();
         countAmountMineNear();
+        auto end = std::chrono::high_resolution_clock::now();
+        std::cout << "Tile spent to a counting bombs: " <<
+            std::chrono::duration_cast<std::chrono::microseconds>(end - start).count() << "mcs\n";
+        
+
+        //testing loop
         
         for (unsigned i = 0; i < tiles_.size(); ++i)
         {
@@ -234,82 +242,38 @@ void Game::leftMouseButtonReleased(const int& x_coord, const int& y_coord)
     }
 }
 
-
-
 void Game::countAmountMineNear()
 {
-    int index{};
+    int xStart{}, yStart{};
+    int xEnd{}, yEnd{};
+
     for (int i = 0; i < board_rows_; ++i)
     {
         for (int j = 0; j < board_columns_; ++j)
         {
-            index = i * board_columns_ + j;
-            if (tiles_[index].hasMine())
+            if (tileAt({ j, i }).hasMine()) 
             {
-
-                if (isValidTile(j - 1, i - 1)) //NORTH-EAST
+                //finding a range of cheching to prevent out of range access
+                xStart = std::max(0, j - 1);
+                yStart = std::max(0, i - 1);
+                xEnd = std::min(j + 1, board_columns_ - 1);
+                yEnd = std::min(i + 1, board_rows_ - 1);
+                for (int yPos = yStart; yPos <= yEnd; ++yPos)
                 {
-                    index = (i - 1) * board_columns_ + (j - 1);
-                    if (!tiles_[index].hasMine())
-                        tiles_[index].increaseBombNear();
+                    for (int xPos = xStart; xPos <= xEnd; ++xPos)
+                    {
+                        if (!tileAt({ xPos, yPos }).hasMine())
+                            tileAt({ xPos, yPos }).increaseBombNear();
+                    }
                 }
-
-                if (isValidTile(j, i - 1)) //NORTH
-                {
-                    index = (i - 1) * board_columns_ + j;
-                    if (!tiles_[index].hasMine())
-                        tiles_[index].increaseBombNear();
-                }
-
-                if (isValidTile(j + 1, i - 1)) // NORTH-WEST
-                {
-                    index = (i - 1) * board_columns_ + (j + 1);
-                    if (!tiles_[index].hasMine())
-                        tiles_[index].increaseBombNear();
-                }
-
-                if (isValidTile(j + 1, i)) //WEST
-                {
-                    index = i * board_columns_ + (j + 1);
-                    if (!tiles_[index].hasMine())
-                        tiles_[index].increaseBombNear();
-                }
-
-                if (isValidTile(j + 1, i + 1)) //SOUTH-WEST
-                {
-                    index = (i + 1) * board_columns_ + (j + 1);
-                    if (!tiles_[index].hasMine())
-                        tiles_[index].increaseBombNear();
-                }
-
-                if (isValidTile(j, i + 1)) //SOUTH
-                {
-                    index = (i + 1) * board_columns_ + j;
-                    if (!tiles_[index].hasMine())
-                        tiles_[index].increaseBombNear();
-                }
-
-                if (isValidTile(j - 1, i + 1)) // SOUTH-EAST
-                {
-                    index = (i + 1) * board_columns_ + (j - 1);
-                    if (!tiles_[index].hasMine())
-                        tiles_[index].increaseBombNear();
-                }
-
-                if (isValidTile(j - 1, i)) //EAST
-                {
-                    index = i * board_columns_ + (j - 1);
-                    if (!tiles_[index].hasMine())
-                        tiles_[index].increaseBombNear();
-                }
-                
             }
         }
     }
 }
 
-bool Game::isValidTile(const int& x, const int& y) const
+//A function returns a reference to a tile with (x,y) coordinates
+Tile& Game::tileAt(sf::Vector2i gridCoord)
 {
-    return x >=0 && x < board_columns_ &&
-            y>=0 && y < board_rows_;
+    return tiles_[gridCoord.y * board_columns_ + gridCoord.x];
 }
+
