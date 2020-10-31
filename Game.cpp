@@ -71,6 +71,10 @@ void Game::Update()
 void Game::Render()
 {
     window_.clear(sf::Color(37, 52, 35));
+    sf::RectangleShape background({ board_columns_ * TILE_SIDE_SIZE*1.f, board_rows_ * TILE_SIDE_SIZE*1.f });
+    background.setPosition({ margin_*1.f,margin_*1.f });
+    background.setFillColor(sf::Color(146,181,156));
+    window_.draw(background);
     for (Tile tile : tiles_)
         window_.draw(tile);
     window_.display();
@@ -80,7 +84,7 @@ void Game::Render()
 void Game::loadTileTextures()
 {
     sf::Texture texture;
-    texture.loadFromFile("resources/pictures/tile.png");
+    texture.loadFromFile("resources/pictures/empty_tile.png");
     tile_textures_.emplace_back(texture);
     for (int i = 1; i < 9; ++i)
     {
@@ -91,6 +95,9 @@ void Game::loadTileTextures()
     tile_textures_.emplace_back(texture);
 
     texture.loadFromFile("resources/pictures/flagged_tile.png");
+    tile_textures_.emplace_back(texture);
+
+    texture.loadFromFile("resources/pictures/primary_tile.png");
     tile_textures_.emplace_back(texture);
 }
 
@@ -104,7 +111,7 @@ void Game::createGameField()
         {
             Tile tile{};
 
-            tile.setTexture(tile_textures_[static_cast<int>(TileType::tile)]);
+            tile.setTexture(tile_textures_[static_cast<int>(TileType::primary_tile)]);
 
             sf::Vector2f position({ static_cast<float>( j * TILE_SIDE_SIZE + margin_) },
                                     { static_cast<float>(i * TILE_SIDE_SIZE + margin_) });
@@ -126,11 +133,10 @@ void Game::initializeMine(const sf::Vector2i& startGridCoord)
     while (mine_amount_ < 99)
     {
         sf::Vector2i randomMinePos{ r_columns_generator(engine), r_row_generator(engine) };
-        /*
-        int r_row = r_row_generator(engine);
-        int r_column = r_columns_generator(engine);*/
+
         int index = randomMinePos.y * board_columns_ + randomMinePos.x; //calculate index in order to access to correct tile in vector of tiles
         int initial_index = startGridCoord.y * board_columns_ + startGridCoord.x;
+
         //this bool variable holds information if the index is in a tile radius around a pressed tile
         //if so, this index have to be skipped, in order to initialize basic condition of the game properly
         bool isAroundFirstTile = (  (index == initial_index + 1) ||
@@ -141,15 +147,6 @@ void Game::initializeMine(const sf::Vector2i& startGridCoord)
                                     (index == initial_index + 1 - board_columns_) ||
                                     (index == initial_index - 1 + board_columns_) ||
                                     (index == initial_index - 1 - board_columns_));
-                                    
-        /*bool isAroundFirstTile = (  (randomMinePos == initial_index + 1) ||
-                                    (index == initial_index - 1) ||
-                                    (index == initial_index + board_columns_) ||
-                                    (index == initial_index - board_columns_) ||
-                                    (index == initial_index + 1 + board_columns_) ||
-                                    (index == initial_index + 1 - board_columns_) ||
-                                    (index == initial_index - 1 + board_columns_) ||
-                                    (index == initial_index - 1 - board_columns_));*/
 
         if (!isAroundFirstTile && !tileAt(randomMinePos).hasMine())
         {
@@ -162,29 +159,43 @@ void Game::initializeMine(const sf::Vector2i& startGridCoord)
 //A function reveal tile after a left mouse button click
 void Game::revealTile(const sf::Vector2i& tileGridCoord)
 {
-    //opening of the first tile on board start the game
-    if (!game_started_)
+    if (tileAt(tileGridCoord).state() == Tile::State::pressed)
     {
-        game_started_ = true;
-        auto start = std::chrono::high_resolution_clock::now();
-        initializeMine(tileGridCoord);
-        auto end = std::chrono::high_resolution_clock::now();
-        countAmountMineNear();
-        
-        std::cout << "Tile spent to a bombs initialization: " <<
-            std::chrono::duration_cast<std::chrono::microseconds>(end - start).count() << "mcs\n";
-        
-        //testing loop
-        
-        for (unsigned i = 0; i < tiles_.size(); ++i)
+        //opening of the first tile on board start the game
+        if (!game_started_)
         {
-            if (tiles_[i].hasMine())
-                tiles_[i].setTexture(tile_textures_[static_cast<int>(TileType::pressed_tile)]);
-            else
-                tiles_[i].setTexture(tile_textures_[tiles_[i].amountBombNear()]);
+            game_started_ = true;
+            //auto start = std::chrono::high_resolution_clock::now();
+            initializeMine(tileGridCoord);
+            //auto end = std::chrono::high_resolution_clock::now();
+            countAmountMineNear();
+
+            //std::cout << "Tile spent to a bombs initialization: " <<
+               // std::chrono::duration_cast<std::chrono::microseconds>(end - start).count() << "mcs\n";
+
+            //testing loop
+            
+            for (unsigned i = 0; i < tiles_.size(); ++i)
+            {
+                if (tiles_[i].hasMine())
+                    tiles_[i].setTexture(tile_textures_[static_cast<int>(TileType::flagged_tile)]);
+                else
+                    tiles_[i].setTexture(tile_textures_[tiles_[i].amountBombNear()]);
+            }
         }
+
+        tileAt(tileGridCoord).changeTileState(Tile::State::revealed);
+        tileAt(tileGridCoord).setTexture(tile_textures_[tileAt(tileGridCoord).amountBombNear()]);
+        if (tileAt(tileGridCoord).hasMine())
+        {
+
+        }
+        else{}
+
+
+
     }
-    //tileAt(tileGridCoord).setTexture(tile_textures_[static_cast<int>(TileType::tile_3)]);
+    
 }
 
 bool Game::isValidGridCoord(const sf::Vector2i& tileGridCoord)
@@ -213,7 +224,7 @@ void Game::rightMouseButtonPressed(const sf::Vector2i& eventCoord)
         }
         else if (tileAt(eventGridCoord).state() == Tile::State::flagged)
         {
-            tileAt(eventGridCoord).setTexture(tile_textures_[static_cast<int>(TileType::tile)]);
+            tileAt(eventGridCoord).setTexture(tile_textures_[static_cast<int>(TileType::primary_tile)]);
             tileAt(eventGridCoord).changeTileState(Tile::State::primary);
         }
     }
@@ -240,16 +251,19 @@ void Game::leftMouseButtonReleased(const sf::Vector2i& eventCoord)
 {
     sf::Vector2i eventGridCoord = coordToGridCoord(eventCoord);
 
-    if (isValidGridCoord(eventGridCoord) && tileAt(eventGridCoord).state() == Tile::State::pressed)
+    if (tileAt(eventGridCoord).state() == Tile::State::pressed && isValidGridCoord(eventGridCoord))
     {
         revealTile(eventGridCoord);
     }
     else//one tile was pressed, so program have to find it in order to finish sequence: pressed->released
     {
-        for (unsigned  i = 0; i < tiles_.size(); ++i)
+        for (int i = 0; i < board_rows_; ++i)
         {
-            if (tiles_[i].state() == Tile::State::pressed)
-                revealTile(eventGridCoord);
+            for (int j = 0; j < board_columns_; ++j)
+            {
+                if (tileAt({ j,i }).state() == Tile::State::pressed)
+                    revealTile({j, i});
+            }
         }
     }
 }
