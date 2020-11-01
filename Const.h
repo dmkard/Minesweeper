@@ -4,3 +4,8 @@
 #define TILE_SIDE_SIZE 50
 #define FRAMERATE 10
 #define MINE_AMOUNT 99
+
+
+#define B_WIDTH 30
+#define B_HEIGHT 16
+constexpr int margin = (W_WIDTH - B_WIDTH * TILE_SIDE_SIZE) / 2;

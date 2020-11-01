@@ -37,6 +37,15 @@ void Tile::setMine()
 	hasMine_ = true;
 }
 
+void Tile::resetTile()
+{
+	hasMine_ = false;
+	state_ = State::primary;
+	amount_mine_near_ = 0;
+}
+
+
+
 Tile::State Tile::state()
 {
 	 return state_;

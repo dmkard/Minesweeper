@@ -16,6 +16,7 @@ public:
 	bool hasMine();
 	void changeTileState(State state);
 	void setMine();
+	void resetTile();
 	State state();
 	void increaseBombNear();
 	int8_t amountBombNear();

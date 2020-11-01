@@ -8,22 +8,32 @@ Game::Game() :  running_{ false },
                 game_over_{false},
                 window_(sf::VideoMode(W_WIDTH, W_HEIGHT), "Minesweeper", sf::Style::Titlebar | sf::Style::Close),
                 mine_amount_{ MINE_AMOUNT },
-                gameTimer_{0},
-                timer_{}
+                gameStopwatch_{0},
+                interface_{}
                 
 {
-    setupTextLabels();
     loadTileTextures();
 }
 //A funtion with game loop
 void Game::Run()
 {
+    
     sf::Clock clock;
     sf::Time endFrameTime;
     int frameTime = sf::seconds(1).asMilliseconds() / FRAMERATE;
     int frameCounter{};
     running_ = true;
     createGameField();
+    std::cout << sizeof(tiles_[1]) << std::endl;
+    std::cout << sizeof(sf::RectangleShape) << std::endl;
+    std::cout << sizeof(sf::Texture) << std::endl;
+    std::cout << sizeof(int8_t) << std::endl;
+    std::cout << sizeof(bool) << std::endl;
+    std::cout << sizeof(Tile::State) << std::endl;
+    std::cout << sizeof(tile_textures_[1]) << std::endl;
+
+
+
     while (running_)
     {
         clock.restart();
@@ -33,11 +43,11 @@ void Game::Run()
             ++frameCounter;
             if (frameCounter % FRAMERATE == 0)
             {
-                ++gameTimer_;
-                timer_.setString(std::to_string(gameTimer_));
+                ++gameStopwatch_;
+                interface_.setStopwatch(gameStopwatch_);
             }
         }
-        mine_left_.setString(std::to_string(mine_amount_));
+        interface_.setMineAmount(mine_amount_);
         HandleInput();
         Update();
         Render();
@@ -81,14 +91,8 @@ void Game::Update()
 
 void Game::Render()
 {
-    sf::RectangleShape background({ board_columns_ * TILE_SIDE_SIZE*1.f+2, board_rows_ * TILE_SIDE_SIZE*1.f+2 });
-    background.setPosition({ margin_*0.96f,margin_*0.96f });
-    background.setFillColor(sf::Color(134,130,121));
-
-    window_.clear(sf::Color(20, 20, 20));
-    window_.draw(background);
-    window_.draw(timer_);
-    window_.draw(mine_left_);
+    window_.clear(interface_.baseColor());
+    window_.draw(interface_);
     for (Tile tile : tiles_)
         window_.draw(tile);
     window_.display();
@@ -124,22 +128,7 @@ void Game::loadTileTextures()
     tile_textures_.emplace_back(texture);
 }
 
-void Game::setupTextLabels()
-{
-    if (!font_.loadFromFile("resources/font/resin.ttf"))
-        std::cout << "Cant load font\n";
-    timer_.setFont(font_);
-    timer_.setString(std::to_string(gameTimer_));
-    timer_.setPosition(margin_*1.f, 2.f * margin_ + TILE_SIDE_SIZE * board_rows_);
-    timer_.setCharacterSize(48); // in pixels, not points!
-    timer_.setFillColor(sf::Color(235, 94, 40));
 
-    mine_left_.setFont(font_);
-    mine_left_.setString(std::to_string(MINE_AMOUNT));
-    mine_left_.setPosition(margin_ * 10.f, 2.f * margin_ + TILE_SIDE_SIZE * board_rows_);
-    mine_left_.setCharacterSize(48); // in pixels, not points!
-    mine_left_.setFillColor(sf::Color(235, 94, 40));
-}
 
 //A function create board_rows_*board_columns_ tiles
 void Game::createGameField()
@@ -153,11 +142,31 @@ void Game::createGameField()
 
             tile.setTexture(tile_textures_[static_cast<int>(TileType::primary_tile)]);
 
-            sf::Vector2f position({ static_cast<float>( j * TILE_SIDE_SIZE + margin_) },
-                                    { static_cast<float>(i * TILE_SIDE_SIZE + margin_) });
+            sf::Vector2f position({ static_cast<float>( j * TILE_SIDE_SIZE + margin) },
+                                    { static_cast<float>(i * TILE_SIDE_SIZE + margin) });
             tile.setPosition(position);
 
             tiles_.emplace_back(tile);
+        }
+    }
+}
+
+void Game::resetGameField()
+{
+    game_started_ = false;
+    game_over_ = false;
+    mine_amount_ = MINE_AMOUNT;
+    gameStopwatch_ = 0;
+    tile_revealed_amount_ = 0;
+    interface_.setStopwatch(gameStopwatch_);
+    interface_.resetTitle();
+    for (int i = 0; i < board_rows_; ++i)
+    {
+        for (int j = 0; j < board_columns_; ++j)
+        {
+            Tile& tile = tileAt({ j, i });
+            tile.resetTile();
+            tile.setTexture(tile_textures_[static_cast<int>(TileType::primary_tile)]);
         }
     }
 }
@@ -216,6 +225,7 @@ void Game::revealTile(const sf::Vector2i& tileGridCoord)
         {
             game_started_ = false;
             game_over_ = true;
+            interface_.showRegrets();
             int index_texture{};
             for (int i = 0; i < board_rows_; ++i)
             {
@@ -241,11 +251,28 @@ void Game::revealTile(const sf::Vector2i& tileGridCoord)
         {
             if (tileAt(tileGridCoord).amountBombNear() == 0)
             {
+                ++tile_revealed_amount_;
+                if (tile_revealed_amount_ == B_WIDTH * B_HEIGHT - MINE_AMOUNT)
+                {
+                    game_started_ = false;
+                    game_over_ = true;
+                    interface_.showCongatulations();
+                }
                 tileAt(tileGridCoord).setTexture(tile_textures_[static_cast<int>(TileType::empty_tile)]);
                 revealTilesNear(tileGridCoord);
+
             }
             else
+            {
+                ++tile_revealed_amount_;
                 tileAt(tileGridCoord).setTexture(tile_textures_[tileAt(tileGridCoord).amountBombNear()]);
+                if (tile_revealed_amount_ == B_WIDTH * B_HEIGHT - MINE_AMOUNT)
+                {
+                    game_started_ = false;
+                    game_over_ = true;
+                    interface_.showCongatulations();
+                }
+            }  
         }
     } 
 }
@@ -272,9 +299,17 @@ bool Game::isValidGridCoord(const sf::Vector2i& tileGridCoord)
             && tileGridCoord.y >=0 && tileGridCoord.y < board_rows_;
 }
 
+bool Game::isResetButton(const sf::Vector2i& eventCoord)
+{
+    return eventCoord.x > margin + TILE_SIDE_SIZE * (B_WIDTH - 1) &&
+            eventCoord.x < margin + TILE_SIDE_SIZE * B_WIDTH &&
+            eventCoord.y > 2.f * margin + TILE_SIDE_SIZE * B_HEIGHT &&
+            eventCoord.y < 2.f * margin + TILE_SIDE_SIZE * (B_HEIGHT+1);
+}
+
  sf::Vector2i Game::coordToGridCoord(const sf::Vector2i& coord)
 {
-    return { (coord.x - margin_) / TILE_SIDE_SIZE, (coord.y - margin_) / TILE_SIDE_SIZE };
+    return { (coord.x - margin) / TILE_SIDE_SIZE, (coord.y - margin) / TILE_SIDE_SIZE };
 }
 
 
@@ -313,6 +348,11 @@ void Game::leftMouseButtonPressed(const sf::Vector2i& eventCoord)
             tileAt(eventGridCoord).changeTileState(Tile::State::pressed);
         }     
     }
+    else if (isResetButton(eventCoord))
+    {
+        resetGameField();
+    }
+
 }
 
 //A function changes state of a tile and reveal it after left mousebutttonreleasef event

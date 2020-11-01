@@ -1,6 +1,7 @@
 #pragma once
 #include <SFML/Graphics.hpp>
 #include "Tile.h"
+#include "Interface.h"
 #include <vector>
 #include <random>
 
@@ -32,11 +33,12 @@ public:
 
 private:
 	void loadTileTextures();
-	void setupTextLabels();
 	void createGameField();
+	void resetGameField();
 	void initializeMine(const sf::Vector2i& startGridCoord);
 	void revealTile(const sf::Vector2i& tileGridCoord);
 	bool isValidGridCoord(const sf::Vector2i& tileGridCoord);
+	bool isResetButton(const sf::Vector2i& eventCoord);
 	sf::Vector2i coordToGridCoord(const sf::Vector2i& coord);
 	void rightMouseButtonPressed(const sf::Vector2i& eventCoord);
 	void leftMouseButtonPressed(const sf::Vector2i& eventCoord);
@@ -46,18 +48,19 @@ private:
 	Tile& tileAt(sf::Vector2i& gridCoord);
 	Tile& tileAt(const sf::Vector2i& gridCoord);
 	sf::RenderWindow window_;
-	sf::Font font_;
+	
 	std::vector<sf::Texture> tile_textures_;
 	std::vector<Tile> tiles_;
-	sf::Text timer_;
-	sf::Text mine_left_;
-	int gameTimer_;
+	Interface interface_;
+
+	int gameStopwatch_;
 	short mine_amount_;
+	short tile_revealed_amount_;
 	bool running_;
 	bool game_started_;
 	bool game_over_;
 	short board_rows_{ 16 };
 	short board_columns_{ 30 };
-	short margin_{ (W_WIDTH - 30 * TILE_SIDE_SIZE) / 2 };
+	
 };
 
