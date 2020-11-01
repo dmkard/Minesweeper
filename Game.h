@@ -32,6 +32,7 @@ public:
 
 private:
 	void loadTileTextures();
+	void setupTextLabels();
 	void createGameField();
 	void initializeMine(const sf::Vector2i& startGridCoord);
 	void revealTile(const sf::Vector2i& tileGridCoord);
@@ -45,12 +46,16 @@ private:
 	Tile& tileAt(sf::Vector2i& gridCoord);
 	Tile& tileAt(const sf::Vector2i& gridCoord);
 	sf::RenderWindow window_;
+	sf::Font font_;
 	std::vector<sf::Texture> tile_textures_;
 	std::vector<Tile> tiles_;
-	int gameTimerSe_;
+	sf::Text timer_;
+	sf::Text mine_left_;
+	int gameTimer_;
 	short mine_amount_;
 	bool running_;
 	bool game_started_;
+	bool game_over_;
 	short board_rows_{ 16 };
 	short board_columns_{ 30 };
 	short margin_{ (W_WIDTH - 30 * TILE_SIDE_SIZE) / 2 };

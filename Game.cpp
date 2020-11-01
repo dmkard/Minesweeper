@@ -5,9 +5,14 @@
 #include <chrono>
 Game::Game() :  running_{ false },
                 game_started_{false},
+                game_over_{false},
                 window_(sf::VideoMode(W_WIDTH, W_HEIGHT), "Minesweeper", sf::Style::Titlebar | sf::Style::Close),
-                mine_amount_{ 0 }
+                mine_amount_{ MINE_AMOUNT },
+                gameTimer_{0},
+                timer_{}
+                
 {
+    setupTextLabels();
     loadTileTextures();
 }
 //A funtion with game loop
@@ -16,11 +21,23 @@ void Game::Run()
     sf::Clock clock;
     sf::Time endFrameTime;
     int frameTime = sf::seconds(1).asMilliseconds() / FRAMERATE;
+    int frameCounter{};
     running_ = true;
     createGameField();
     while (running_)
     {
         clock.restart();
+
+        if (game_started_)
+        {
+            ++frameCounter;
+            if (frameCounter % FRAMERATE == 0)
+            {
+                ++gameTimer_;
+                timer_.setString(std::to_string(gameTimer_));
+            }
+        }
+        mine_left_.setString(std::to_string(mine_amount_));
         HandleInput();
         Update();
         Render();
@@ -64,11 +81,14 @@ void Game::Update()
 
 void Game::Render()
 {
-    window_.clear(sf::Color(20, 20, 20));
-    sf::RectangleShape background({ board_columns_ * TILE_SIDE_SIZE*1.f+4, board_rows_ * TILE_SIDE_SIZE*1.f+4 });
+    sf::RectangleShape background({ board_columns_ * TILE_SIDE_SIZE*1.f+2, board_rows_ * TILE_SIDE_SIZE*1.f+2 });
     background.setPosition({ margin_*0.96f,margin_*0.96f });
     background.setFillColor(sf::Color(134,130,121));
+
+    window_.clear(sf::Color(20, 20, 20));
     window_.draw(background);
+    window_.draw(timer_);
+    window_.draw(mine_left_);
     for (Tile tile : tiles_)
         window_.draw(tile);
     window_.display();
@@ -104,6 +124,23 @@ void Game::loadTileTextures()
     tile_textures_.emplace_back(texture);
 }
 
+void Game::setupTextLabels()
+{
+    if (!font_.loadFromFile("resources/font/resin.ttf"))
+        std::cout << "Cant load font\n";
+    timer_.setFont(font_);
+    timer_.setString(std::to_string(gameTimer_));
+    timer_.setPosition(margin_*1.f, 2.f * margin_ + TILE_SIDE_SIZE * board_rows_);
+    timer_.setCharacterSize(48); // in pixels, not points!
+    timer_.setFillColor(sf::Color(235, 94, 40));
+
+    mine_left_.setFont(font_);
+    mine_left_.setString(std::to_string(MINE_AMOUNT));
+    mine_left_.setPosition(margin_ * 10.f, 2.f * margin_ + TILE_SIDE_SIZE * board_rows_);
+    mine_left_.setCharacterSize(48); // in pixels, not points!
+    mine_left_.setFillColor(sf::Color(235, 94, 40));
+}
+
 //A function create board_rows_*board_columns_ tiles
 void Game::createGameField()
 {
@@ -128,12 +165,12 @@ void Game::createGameField()
 //A function randomly sets 99 Mine on early created tites
 void Game::initializeMine(const sf::Vector2i& startGridCoord)
 {
-    mine_amount_ = 0;
+    int mineLeft = MINE_AMOUNT;
     std::random_device engine;
     std::uniform_int_distribution<int> r_row_generator(0,board_rows_-1);
     std::uniform_int_distribution<int> r_columns_generator(0, board_columns_-1);
 
-    while (mine_amount_ < 99)
+    while (mineLeft > 0)
     {
         sf::Vector2i randomMinePos{ r_columns_generator(engine), r_row_generator(engine) };
 
@@ -155,7 +192,7 @@ void Game::initializeMine(const sf::Vector2i& startGridCoord)
         if (!isAroundFirstTile && !tileAt(randomMinePos).hasMine())
         {
             tileAt(randomMinePos).setMine();
-            ++mine_amount_;
+            --mineLeft;
         }  
     }
 }
@@ -169,30 +206,16 @@ void Game::revealTile(const sf::Vector2i& tileGridCoord)
         if (!game_started_)
         {
             game_started_ = true;
-            //auto start = std::chrono::high_resolution_clock::now();
             initializeMine(tileGridCoord);
-            //auto end = std::chrono::high_resolution_clock::now();
             countAmountMineNear();
-
-            //std::cout << "Tile spent to a bombs initialization: " <<
-               // std::chrono::duration_cast<std::chrono::microseconds>(end - start).count() << "mcs\n";
-
-            //testing loop
-            
-            /*for (unsigned i = 0; i < tiles_.size()/2; ++i)
-            {
-                if (tiles_[i].hasMine())
-                    tiles_[i].setTexture(tile_textures_[static_cast<int>(TileType::flagged_tile)]);
-                else
-                    tiles_[i].setTexture(tile_textures_[tiles_[i].amountBombNear()]);
-            }*/
         }
-
         
         tileAt(tileGridCoord).changeTileState(Tile::State::revealed);
 
         if (tileAt(tileGridCoord).hasMine())
         {
+            game_started_ = false;
+            game_over_ = true;
             int index_texture{};
             for (int i = 0; i < board_rows_; ++i)
             {
@@ -260,17 +283,19 @@ void Game::rightMouseButtonPressed(const sf::Vector2i& eventCoord)
 {
     sf::Vector2i eventGridCoord = coordToGridCoord(eventCoord);
 
-    if (isValidGridCoord(eventGridCoord))
+    if (!game_over_ && isValidGridCoord(eventGridCoord))
     {
         if (tileAt(eventGridCoord).state() == Tile::State::primary)
         {
             tileAt(eventGridCoord).setTexture(tile_textures_[static_cast<int>(TileType::flagged_tile)]);
             tileAt(eventGridCoord).changeTileState(Tile::State::flagged);
+            --mine_amount_;
         }
         else if (tileAt(eventGridCoord).state() == Tile::State::flagged)
         {
             tileAt(eventGridCoord).setTexture(tile_textures_[static_cast<int>(TileType::primary_tile)]);
             tileAt(eventGridCoord).changeTileState(Tile::State::primary);
+            ++mine_amount_;
         }
     }
 }
@@ -280,7 +305,7 @@ void Game::leftMouseButtonPressed(const sf::Vector2i& eventCoord)
 {
     sf::Vector2i eventGridCoord = coordToGridCoord(eventCoord);
 
-    if (isValidGridCoord(eventGridCoord))
+    if (!game_over_ && isValidGridCoord(eventGridCoord))
     {
         if (tileAt(eventGridCoord).state() == Tile::State::primary)
         {
@@ -295,7 +320,6 @@ void Game::leftMouseButtonPressed(const sf::Vector2i& eventCoord)
 void Game::leftMouseButtonReleased(const sf::Vector2i& eventCoord)
 {
     sf::Vector2i eventGridCoord = coordToGridCoord(eventCoord);
-
     if (isValidGridCoord(eventGridCoord) &&
         tileAt(eventGridCoord).state() == Tile::State::pressed &&
         isValidGridCoord(eventGridCoord))
