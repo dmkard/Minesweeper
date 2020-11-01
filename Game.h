@@ -19,7 +19,10 @@ public:
 						tile_8 = 8,
 						pressed_tile = 9,
 						flagged_tile = 10,
-						primary_tile = 11
+						primary_tile = 11,
+						has_mine_tile = 12,
+						wrong_mine_tile = 13,
+						mine_exploded_tile =14
 						};
 	Game();
 	void Run();
@@ -38,11 +41,13 @@ private:
 	void leftMouseButtonPressed(const sf::Vector2i& eventCoord);
 	void leftMouseButtonReleased(const sf::Vector2i& eventCoord);
 	void countAmountMineNear();
+	void revealTilesNear(const sf::Vector2i& eventGridCoord);
 	Tile& tileAt(sf::Vector2i& gridCoord);
 	Tile& tileAt(const sf::Vector2i& gridCoord);
 	sf::RenderWindow window_;
 	std::vector<sf::Texture> tile_textures_;
 	std::vector<Tile> tiles_;
+	int gameTimerSe_;
 	short mine_amount_;
 	bool running_;
 	bool game_started_;
