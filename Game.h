@@ -43,6 +43,7 @@ private:
 	void rightMouseButtonPressed(const sf::Vector2i& eventCoord);
 	void leftMouseButtonPressed(const sf::Vector2i& eventCoord);
 	void leftMouseButtonReleased(const sf::Vector2i& eventCoord);
+	void bothMouseButoonPressed(const sf::Vector2i& eventCoord);
 	void countAmountMineNear();
 	void revealTilesNear(const sf::Vector2i& eventGridCoord);
 	Tile& tileAt(sf::Vector2i& gridCoord);
@@ -59,6 +60,7 @@ private:
 	bool running_;
 	bool game_started_;
 	bool game_over_;
+	bool field_was_changed_;
 	short board_rows_{ 16 };
 	short board_columns_{ 30 };
 	

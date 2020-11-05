@@ -6,11 +6,11 @@
 Game::Game() :  running_{ false },
                 game_started_{false},
                 game_over_{false},
+                field_was_changed_{true},
                 window_(sf::VideoMode(W_WIDTH, W_HEIGHT), "Minesweeper", sf::Style::Titlebar | sf::Style::Close),
                 mine_amount_{ MINE_AMOUNT },
                 gameStopwatch_{0},
-                interface_{}
-                
+                interface_{}      
 {
     loadTileTextures();
 }
@@ -71,14 +71,19 @@ void Game::HandleInput()
 
         if (event.type == sf::Event::MouseButtonPressed)
         {
-            if (event.mouseButton.button == sf::Mouse::Right)
+            field_was_changed_ = true;
+            if (sf::Mouse::isButtonPressed(sf::Mouse::Left) && sf::Mouse::isButtonPressed(sf::Mouse::Right))
+                bothMouseButoonPressed({ event.mouseButton.x, event.mouseButton.y });
+
+            else if (event.mouseButton.button == sf::Mouse::Right)
                 rightMouseButtonPressed({ event.mouseButton.x, event.mouseButton.y });
 
-            if (event.mouseButton.button == sf::Mouse::Left)
+            else if (event.mouseButton.button == sf::Mouse::Left)
                 leftMouseButtonPressed({ event.mouseButton.x, event.mouseButton.y });
         }
         if (event.type == sf::Event::MouseButtonReleased)
         {
+            field_was_changed_ = true;
             if (event.mouseButton.button == sf::Mouse::Left)
                 leftMouseButtonReleased({ event.mouseButton.x, event.mouseButton.y });
         }
@@ -91,11 +96,15 @@ void Game::Update()
 
 void Game::Render()
 {
-    window_.clear(interface_.baseColor());
-    window_.draw(interface_);
-    for (Tile tile : tiles_)
-        window_.draw(tile);
-    window_.display();
+    if (field_was_changed_)
+    {
+        window_.clear(interface_.baseColor());
+        window_.draw(interface_);
+        for (Tile tile : tiles_)
+            window_.draw(tile);
+        window_.display();
+        field_was_changed_ = false;
+    }
 }
 
 //A function loads all tile textures to vector with textures
@@ -380,6 +389,38 @@ void Game::leftMouseButtonReleased(const sf::Vector2i& eventCoord)
                 }    
             }
         }
+    }
+}
+
+void Game::bothMouseButoonPressed(const sf::Vector2i& eventCoord)
+{
+    sf::Vector2i eventGridCoord = coordToGridCoord(eventCoord);
+    if (!game_over_ && isValidGridCoord(eventGridCoord))
+    {
+        if (tileAt(eventGridCoord).state() == Tile::State::revealed)
+        {
+            int xStart = std::max(0, eventGridCoord.x - 1);
+            int yStart = std::max(0, eventGridCoord.y - 1);
+            int xEnd = std::min(eventGridCoord.x + 1, board_columns_ - 1);
+            int yEnd = std::min(eventGridCoord.y + 1, board_rows_ - 1);
+            int flagged_mine_near{0};
+            for (int yPos = yStart; yPos <= yEnd; ++yPos)
+            {
+                for (int xPos = xStart; xPos <= xEnd; ++xPos)
+                {
+                    if(tileAt({xPos,yPos}).state() == Tile::State::flagged)
+                        ++flagged_mine_near;
+                }
+            }
+            if (flagged_mine_near == tileAt(eventGridCoord).amountBombNear())
+                revealTilesNear(eventGridCoord);
+            //tileAt(eventGridCoord).setTexture(tile_textures_[static_cast<int>(TileType::pressed_tile)]);
+            //tileAt(eventGridCoord).changeTileState(Tile::State::pressed);
+        }
+    }
+    else if (isResetButton(eventCoord))
+    {
+        resetGameField();
     }
 }
 
