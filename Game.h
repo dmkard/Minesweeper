@@ -18,17 +18,15 @@ public:
 						tile_6 = 6,
 						tile_7 = 7, 
 						tile_8 = 8,
-						pressed_tile = 9,
-						flagged_tile = 10,
-						primary_tile = 11,
-						has_mine_tile = 12,
-						wrong_mine_tile = 13,
-						mine_exploded_tile =14
+						flagged_tile = 9,
+						primary_tile = 10,
+						has_mine_tile = 11,
+						wrong_mine_tile = 12,
+						mine_exploded_tile =13
 						};
 	Game();
 	void Run();
 	void HandleInput();
-	void Update();
 	void Render();
 
 private:
@@ -40,20 +38,26 @@ private:
 	bool isValidGridCoord(const sf::Vector2i& tileGridCoord);
 	bool isResetButton(const sf::Vector2i& eventCoord);
 	sf::Vector2i coordToGridCoord(const sf::Vector2i& coord);
+
 	void rightMouseButtonPressed(const sf::Vector2i& eventCoord);
 	void leftMouseButtonPressed(const sf::Vector2i& eventCoord);
 	void leftMouseButtonReleased(const sf::Vector2i& eventCoord);
 	void bothMouseButoonPressed(const sf::Vector2i& eventCoord);
+	void doActionOnArea(void (Game::*f)(const sf::Vector2i& eventGridCoord), const sf::Vector2i& eventGridCoord);
 	void countAmountMineNear();
-	void revealTilesNear(const sf::Vector2i& eventGridCoord);
+
 	Tile& tileAt(sf::Vector2i& gridCoord);
+
 	Tile& tileAt(const sf::Vector2i& gridCoord);
 	sf::RenderWindow window_;
-	
+	sf::Image icon_;
+
 	std::vector<sf::Texture> tile_textures_;
 	std::vector<Tile> tiles_;
 	Interface interface_;
 
+	sf::Vector2f previousPressed_{ 0,0 };
+	
 	int gameStopwatch_;
 	short mine_amount_;
 	short tile_revealed_amount_;
@@ -61,8 +65,6 @@ private:
 	bool game_started_;
 	bool game_over_;
 	bool field_was_changed_;
-	short board_rows_{ 16 };
-	short board_columns_{ 30 };
-	
+
 };
 
