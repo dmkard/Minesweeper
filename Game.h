@@ -39,6 +39,7 @@ private:
 	bool isResetButton(const sf::Vector2i& eventCoord);
 	sf::Vector2i coordToGridCoord(const sf::Vector2i& coord);
 
+	void mineExploded(const sf::Vector2i& tileGridCoord);
 	void rightMouseButtonPressed(const sf::Vector2i& eventCoord);
 	void leftMouseButtonPressed(const sf::Vector2i& eventCoord);
 	void leftMouseButtonReleased(const sf::Vector2i& eventCoord);

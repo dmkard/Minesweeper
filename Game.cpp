@@ -227,29 +227,7 @@ void Game::revealTile(const sf::Vector2i& tileGridCoord)
         //the situation when we clicked on mine
         if (tileAt(tileGridCoord).hasMine()) 
         {
-            game_started_ = false;
-            game_over_ = true;
-            interface_.showRegrets();
-            int index_texture{};
-            for (int i = 0; i < B_HEIGHT; ++i)
-            {
-                for (int j = 0; j < B_WIDTH; ++j)
-                {
-                    if (tileAt({ j,i }).state() == Tile::State::flagged && !tileAt({ j,i }).hasMine())
-                    {
-                        index_texture = static_cast<int> (TileType::wrong_mine_tile);
-                        tileAt({ j,i }).setTexture(tile_textures_[index_texture]);
-                    }
-                    else if(tileAt({ j,i }).hasMine() && tileAt({ j,i }).state() != Tile::State::flagged)
-                    {
-                        index_texture = static_cast<int> (TileType::has_mine_tile);
-                        tileAt({ j,i }).setTexture(tile_textures_[index_texture]);
-                    }
-                }
-            }
-
-            index_texture = static_cast<int> (TileType::mine_exploded_tile);
-            tileAt(tileGridCoord).setTexture(tile_textures_[index_texture]);
+            mineExploded(tileGridCoord);
         }
         else 
         {
@@ -304,7 +282,34 @@ bool Game::isResetButton(const sf::Vector2i& eventCoord)
             (yCoord < 0) ? -1 : yCoord / TILE_SIDE_SIZE };
 }
 
-//A function changes state and texture after right mousebuttonpressed event
+ void Game::mineExploded(const sf::Vector2i& tileGridCoord)
+ {
+     game_started_ = false;
+     game_over_ = true;
+     interface_.showRegrets();
+     int index_texture{};
+     for (int i = 0; i < B_HEIGHT; ++i)
+     {
+         for (int j = 0; j < B_WIDTH; ++j)
+         {
+             if (tileAt({ j,i }).state() == Tile::State::flagged && !tileAt({ j,i }).hasMine())
+             {
+                 index_texture = static_cast<int> (TileType::wrong_mine_tile);
+                 tileAt({ j,i }).setTexture(tile_textures_[index_texture]);
+             }
+             else if (tileAt({ j,i }).hasMine() && tileAt({ j,i }).state() != Tile::State::flagged)
+             {
+                 index_texture = static_cast<int> (TileType::has_mine_tile);
+                 tileAt({ j,i }).setTexture(tile_textures_[index_texture]);
+             }
+         }
+     }
+
+     index_texture = static_cast<int> (TileType::mine_exploded_tile);
+     tileAt(tileGridCoord).setTexture(tile_textures_[index_texture]);
+ }
+
+ //A function changes state and texture after right mousebuttonpressed event
 void Game::rightMouseButtonPressed(const sf::Vector2i& eventCoord)
 {
     sf::Vector2i eventGridCoord = coordToGridCoord(eventCoord);
@@ -331,29 +336,30 @@ void Game::leftMouseButtonPressed(const sf::Vector2i& eventCoord)
 {
     sf::Vector2i eventGridCoord = coordToGridCoord(eventCoord);
   
-    if (eventGridCoord != previousPressedTile_)
+    if (!game_over_ )
     {
-        if (isValidGridCoord(previousPressedTile_) &&
-            tileAt(previousPressedTile_).state() != Tile::State::revealed)
+        if ( eventGridCoord != previousPressedTile_)
         {
-            tileAt(previousPressedTile_).setTexture(tile_textures_[static_cast<int>(TileType::primary_tile)]);
-            tileAt(previousPressedTile_).changeTileState(Tile::State::primary);
+            if (isValidGridCoord(previousPressedTile_) &&
+                tileAt(previousPressedTile_).state() != Tile::State::revealed)
+            {
+                tileAt(previousPressedTile_).setTexture(tile_textures_[static_cast<int>(TileType::primary_tile)]);
+                tileAt(previousPressedTile_).changeTileState(Tile::State::primary);
+            }
+            previousPressedTile_ = eventGridCoord;
         }
-        previousPressedTile_ = eventGridCoord;
-    }
-    if (!game_over_ && isValidGridCoord(eventGridCoord))
-    {
-        if (tileAt(eventGridCoord).state() == Tile::State::primary)
+
+        if (isValidGridCoord(eventGridCoord))
         {
-            tileAt(eventGridCoord).setTexture(tile_textures_[static_cast<int>(TileType::empty_tile)]);
-            tileAt(eventGridCoord).changeTileState(Tile::State::pressed);
-        }     
+            if (tileAt(eventGridCoord).state() == Tile::State::primary)
+            {
+                tileAt(eventGridCoord).setTexture(tile_textures_[static_cast<int>(TileType::empty_tile)]);
+                tileAt(eventGridCoord).changeTileState(Tile::State::pressed);
+            }
+        }
     }
     else if (isResetButton(eventCoord))
-    {
         resetGameField();
-    }
-
 }
 
 //A function changes state of a tile and reveal it after left mousebutttonreleasef event
@@ -406,10 +412,6 @@ void Game::bothMouseButoonPressed(const sf::Vector2i& eventCoord)
             if (flagged_mine_near == tileAt(eventGridCoord).amountBombNear())
                 revealTilesNear(eventGridCoord);
         }
-    }
-    else if (isResetButton(eventCoord))
-    {
-        resetGameField();
     }
 }
 
