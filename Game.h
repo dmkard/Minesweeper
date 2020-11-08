@@ -43,12 +43,12 @@ private:
 	void leftMouseButtonPressed(const sf::Vector2i& eventCoord);
 	void leftMouseButtonReleased(const sf::Vector2i& eventCoord);
 	void bothMouseButoonPressed(const sf::Vector2i& eventCoord);
-	void doActionOnArea(void (Game::*f)(const sf::Vector2i& eventGridCoord), const sf::Vector2i& eventGridCoord);
+	void revealTilesNear(const sf::Vector2i& eventGridCoord);
 	void countAmountMineNear();
 
 	Tile& tileAt(sf::Vector2i& gridCoord);
-
 	Tile& tileAt(const sf::Vector2i& gridCoord);
+
 	sf::RenderWindow window_;
 	sf::Image icon_;
 
@@ -56,7 +56,7 @@ private:
 	std::vector<Tile> tiles_;
 	Interface interface_;
 
-	sf::Vector2f previousPressed_{ 0,0 };
+	sf::Vector2i previousPressedTile_{ -1,-1 };
 	
 	int gameStopwatch_;
 	short mine_amount_;
