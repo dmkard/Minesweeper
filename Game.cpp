@@ -3,6 +3,8 @@
 #include <algorithm>
 #include <iostream>
 #include <chrono>
+#include <cmath>
+
 
 Game::Game() :  running_{ false },
                 game_started_{false},
@@ -277,9 +279,12 @@ bool Game::isResetButton(const sf::Vector2i& eventCoord)
 {
      int xCoord = (coord.x - margin);
      int yCoord = (coord.y - margin);
+     if (xCoord < 0)
+         xCoord -= TILE_SIDE_SIZE;
+     if (yCoord < 0)
+         yCoord -= TILE_SIDE_SIZE;
 
-     return{ (xCoord < 0) ? -1 : xCoord / TILE_SIDE_SIZE,
-            (yCoord < 0) ? -1 : yCoord / TILE_SIDE_SIZE };
+     return{  xCoord / TILE_SIDE_SIZE, yCoord / TILE_SIDE_SIZE };
 }
 
  void Game::mineExploded(const sf::Vector2i& tileGridCoord)
@@ -308,6 +313,51 @@ bool Game::isResetButton(const sf::Vector2i& eventCoord)
      index_texture = static_cast<int> (TileType::mine_exploded_tile);
      tileAt(tileGridCoord).setTexture(tile_textures_[index_texture]);
  }
+
+ /*
+ void Game::mineExploded(const sf::Vector2i& tileGridCoord)
+ {
+     game_started_ = false;
+     game_over_ = true;
+     interface_.showRegrets();
+     int index_texture{};
+     int maxRayLength = sqrt(pow(B_HEIGHT,2)+ pow(B_WIDTH,2))*2;
+
+     index_texture = static_cast<int> (TileType::mine_exploded_tile);
+     tileAt(tileGridCoord).setTexture(tile_textures_[index_texture]);
+
+     for (int i = 1; i < maxRayLength + 1; ++i)
+     {
+         double checkAmount = 4.f * ((i/2.f) + 1);
+         double angleStep = 360 / checkAmount;
+         std::cout << "Circle N" << i << std::endl;
+         for (double j = 0; j < 360; j+=angleStep)
+         {
+             double inRadians = 3.1415 * j / 180;
+
+             sf::Vector2i coord({static_cast<int>(cos(inRadians)*i* TILE_SIDE_SIZE), 
+                 static_cast<int>(-(sin(inRadians) * i * TILE_SIDE_SIZE ))});
+             
+             sf::Vector2i gridCoord = tileGridCoord + coordToGridCoord(coord);
+             if (isValidGridCoord(gridCoord))
+             {
+                 if (tileAt(gridCoord).state() == Tile::State::flagged && !tileAt(gridCoord).hasMine())
+                 {
+                     index_texture = static_cast<int> (TileType::wrong_mine_tile);
+                     tileAt(gridCoord).setTexture(tile_textures_[index_texture]);
+                 }
+                 else if (tileAt(gridCoord).hasMine() && tileAt(gridCoord).state() != Tile::State::flagged)
+                 {
+                     index_texture = static_cast<int> (TileType::has_mine_tile);
+                     tileAt(gridCoord).setTexture(tile_textures_[index_texture]);
+                 }
+             }
+         }
+         field_was_changed_ = true;
+         sf::sleep(sf::milliseconds(50));
+         Render();
+     }
+ }*/
 
  //A function changes state and texture after right mousebuttonpressed event
 void Game::rightMouseButtonPressed(const sf::Vector2i& eventCoord)
