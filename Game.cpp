@@ -13,11 +13,10 @@ Game::Game() :  running_{ false },
                 window_(sf::VideoMode(W_WIDTH, W_HEIGHT), "Minesweeper", sf::Style::Titlebar | sf::Style::Close),
                 mine_amount_{ MINE_AMOUNT },
                 gameStopwatch_{0},
-                interface_{}      
-{
-    loadTileTextures();
-    
-    icon_.loadFromFile("resources/pictures/logo.png"); // File/Image/Pixel
+                interface_{},
+                tile_revealed_amount_{0}
+{ 
+    icon_.loadFromFile("resources/pictures/icon.png"); // File/Image/Pixel
     window_.setIcon(icon_.getSize().x, icon_.getSize().y, icon_.getPixelsPtr());
 }
 //A funtion with game loop
@@ -60,7 +59,6 @@ void Game::HandleInput()
     
     if (sf::Mouse::isButtonPressed(sf::Mouse::Left))
     {
-        field_was_changed_ = true;
         leftMouseButtonPressed(sf::Mouse::getPosition(window_));
     }
         
@@ -107,33 +105,6 @@ void Game::Render()
     }
 }
 
-//A function loads all tile textures to vector with textures
-void Game::loadTileTextures()
-{
-    sf::Texture texture;
-    texture.loadFromFile("resources/pictures/empty_tile.png");
-    tile_textures_.emplace_back(texture);
-    for (int i = 1; i < 9; ++i)
-    {
-        texture.loadFromFile("resources/pictures/tile" + std::to_string(i) + ".png");
-        tile_textures_.emplace_back(texture);
-    }
-    texture.loadFromFile("resources/pictures/flagged_tile.png");
-    tile_textures_.emplace_back(texture);
-
-    texture.loadFromFile("resources/pictures/primary_tile.png");
-    tile_textures_.emplace_back(texture);
-
-    texture.loadFromFile("resources/pictures/has_mine_tile.png");
-    tile_textures_.emplace_back(texture);
-
-    texture.loadFromFile("resources/pictures/wrong_mine_tile.png");
-    tile_textures_.emplace_back(texture);
-
-    texture.loadFromFile("resources/pictures/mine_exploded_tile.png");
-    tile_textures_.emplace_back(texture);
-}
-
 //A function create B_HEIGHT*B_WIDTH tiles
 void Game::createGameField()
 {
@@ -146,7 +117,7 @@ void Game::createGameField()
             sf::Vector2f position({ static_cast<float>(j * TILE_SIDE_SIZE + margin) },
                 { static_cast<float>(i * TILE_SIDE_SIZE + margin) });
 
-            tile.setTexture(tile_textures_[static_cast<int>(TileType::primary_tile)]);
+            tile.setTexture(resorce_manager_.getTexture("primary_tile"));
             tile.setPosition(position);
 
             tiles_.emplace_back(tile);
@@ -171,9 +142,11 @@ void Game::resetGameField()
         {
             Tile& tile = tileAt({ j, i });
             tile.resetTile();
-            tile.setTexture(tile_textures_[static_cast<int>(TileType::primary_tile)]);
+            tile.setTexture(resorce_manager_.getTexture("primary_tile"));
         }
     }
+
+    resorce_manager_.Update();
 }
 
 //A function randomly sets 99 Mine on early created tites
@@ -242,13 +215,13 @@ void Game::revealTile(const sf::Vector2i& tileGridCoord)
                     game_over_ = true;
                     interface_.showCongatulations();
                 }
-                tileAt(tileGridCoord).setTexture(tile_textures_[static_cast<int>(TileType::empty_tile)]);
+                tileAt(tileGridCoord).setTexture(resorce_manager_.getTexture("empty_tile"));
                 revealTilesNear(tileGridCoord);
             }
             else
             {
                 ++tile_revealed_amount_;
-                tileAt(tileGridCoord).setTexture(tile_textures_[tileAt(tileGridCoord).amountBombNear()]);
+                tileAt(tileGridCoord).setTexture(resorce_manager_.getTexture("tile_"+ std::to_string(tileAt(tileGridCoord).amountBombNear())));
                 if (tile_revealed_amount_ == B_WIDTH * B_HEIGHT - MINE_AMOUNT)
                 {
                     game_started_ = false;
@@ -298,20 +271,13 @@ bool Game::isResetButton(const sf::Vector2i& eventCoord)
          for (int j = 0; j < B_WIDTH; ++j)
          {
              if (tileAt({ j,i }).state() == Tile::State::flagged && !tileAt({ j,i }).hasMine())
-             {
-                 index_texture = static_cast<int> (TileType::wrong_mine_tile);
-                 tileAt({ j,i }).setTexture(tile_textures_[index_texture]);
-             }
+                 tileAt({ j,i }).setTexture(resorce_manager_.getTexture("wrong_mine_tile"));
+
              else if (tileAt({ j,i }).hasMine() && tileAt({ j,i }).state() != Tile::State::flagged)
-             {
-                 index_texture = static_cast<int> (TileType::has_mine_tile);
-                 tileAt({ j,i }).setTexture(tile_textures_[index_texture]);
-             }
+                 tileAt({ j,i }).setTexture(resorce_manager_.getTexture("has_mine_tile"));
          }
      }
-
-     index_texture = static_cast<int> (TileType::mine_exploded_tile);
-     tileAt(tileGridCoord).setTexture(tile_textures_[index_texture]);
+     tileAt(tileGridCoord).setTexture(resorce_manager_.getTexture("mine_exploded_tile"));
  }
 
  /*
@@ -368,13 +334,15 @@ void Game::rightMouseButtonPressed(const sf::Vector2i& eventCoord)
     {
         if (tileAt(eventGridCoord).state() == Tile::State::primary)
         {
-            tileAt(eventGridCoord).setTexture(tile_textures_[static_cast<int>(TileType::flagged_tile)]);
+            tileAt(eventGridCoord).setTexture(resorce_manager_.getTexture("flagged_tile"));
+            //tileAt(eventGridCoord).setTexture(tile_textures_[static_cast<int>(TileType::flagged_tile)]);
             tileAt(eventGridCoord).changeTileState(Tile::State::flagged);
             --mine_amount_;
         }
         else if (tileAt(eventGridCoord).state() == Tile::State::flagged)
         {
-            tileAt(eventGridCoord).setTexture(tile_textures_[static_cast<int>(TileType::primary_tile)]);
+            tileAt(eventGridCoord).setTexture(resorce_manager_.getTexture("primary_tile"));
+            //tileAt(eventGridCoord).setTexture(tile_textures_[static_cast<int>(TileType::primary_tile)]);
             tileAt(eventGridCoord).changeTileState(Tile::State::primary);
             ++mine_amount_;
         }
@@ -388,12 +356,14 @@ void Game::leftMouseButtonPressed(const sf::Vector2i& eventCoord)
   
     if (!game_over_ )
     {
+        field_was_changed_ = true;
         if ( eventGridCoord != previousPressedTile_)
         {
             if (isValidGridCoord(previousPressedTile_) &&
                 tileAt(previousPressedTile_).state() != Tile::State::revealed)
             {
-                tileAt(previousPressedTile_).setTexture(tile_textures_[static_cast<int>(TileType::primary_tile)]);
+                tileAt(previousPressedTile_).setTexture(resorce_manager_.getTexture("primary_tile"));
+                //tileAt(previousPressedTile_).setTexture(tile_textures_[static_cast<int>(TileType::primary_tile)]);
                 tileAt(previousPressedTile_).changeTileState(Tile::State::primary);
             }
             previousPressedTile_ = eventGridCoord;
@@ -403,13 +373,13 @@ void Game::leftMouseButtonPressed(const sf::Vector2i& eventCoord)
         {
             if (tileAt(eventGridCoord).state() == Tile::State::primary)
             {
-                tileAt(eventGridCoord).setTexture(tile_textures_[static_cast<int>(TileType::empty_tile)]);
+                tileAt(eventGridCoord).setTexture(resorce_manager_.getTexture("empty_tile"));
+                //tileAt(eventGridCoord).setTexture(tile_textures_[static_cast<int>(TileType::empty_tile)]);
                 tileAt(eventGridCoord).changeTileState(Tile::State::pressed);
             }
         }
     }
-    else if (isResetButton(eventCoord))
-        resetGameField();
+
 }
 
 //A function changes state of a tile and reveal it after left mousebutttonreleasef event
@@ -437,6 +407,8 @@ void Game::leftMouseButtonReleased(const sf::Vector2i& eventCoord)
             }
         }
     }
+    if (isResetButton(eventCoord))
+        resetGameField();
 }
 
 void Game::bothMouseButoonPressed(const sf::Vector2i& eventCoord)
@@ -494,12 +466,12 @@ void Game::countAmountMineNear()
 //A function returns a reference to a tile with (x,y) grid coordinates
 Tile& Game::tileAt(sf::Vector2i& gridCoord)
 {
-    return tiles_[gridCoord.y * B_WIDTH + gridCoord.x];
+    return tiles_[(gridCoord.y * B_WIDTH) + gridCoord.x];
 }
 
 Tile& Game::tileAt(const sf::Vector2i& gridCoord) 
 {
-    return tiles_[gridCoord.y * B_WIDTH + gridCoord.x];
+    return tiles_[(gridCoord.y * B_WIDTH) + gridCoord.x];
 }
 
 void Game::revealTilesNear(const sf::Vector2i& eventGridCoord)

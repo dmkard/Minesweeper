@@ -3,7 +3,7 @@
 #define W_HEIGHT 925
 #define TILE_SIDE_SIZE 50
 #define FRAMERATE 30
-#define MINE_AMOUNT 50
+#define MINE_AMOUNT 99
 
 
 #define B_WIDTH 30

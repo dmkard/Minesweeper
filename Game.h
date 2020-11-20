@@ -2,6 +2,7 @@
 #include <SFML/Graphics.hpp>
 #include "Tile.h"
 #include "Interface.h"
+#include "ResourceManager.h"
 #include <vector>
 #include <random>
 
@@ -30,7 +31,7 @@ public:
 	void Render();
 
 private:
-	void loadTileTextures();
+	/*void loadTileTextures();*/
 	void createGameField();
 	void resetGameField();
 	void initializeMine(const sf::Vector2i& startGridCoord);
@@ -51,11 +52,13 @@ private:
 	Tile& tileAt(const sf::Vector2i& gridCoord);
 
 	sf::RenderWindow window_;
+	Interface interface_;
+	ResourceManager resorce_manager_;
 	sf::Image icon_;
 
-	std::vector<sf::Texture> tile_textures_;
+	//std::vector<sf::Texture> tile_textures_;
 	std::vector<Tile> tiles_;
-	Interface interface_;
+	
 
 	sf::Vector2i previousPressedTile_{ -1,-1 };
 	

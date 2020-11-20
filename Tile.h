@@ -9,7 +9,7 @@ public:
 	enum class State{primary = 1, flagged, revealed, pressed};
 	Tile();
 	virtual void draw(sf::RenderTarget& target, sf::RenderStates states) const;
-	virtual void setTexture(sf::Texture& texture);
+	virtual void setTexture(const std::shared_ptr<sf::Texture>& texture);
 	virtual void setPosition(const sf::Vector2f& position);
 
 	bool hasMine();
@@ -23,7 +23,7 @@ public:
 private:
 	
 	sf::RectangleShape tile_;
-	sf::Texture texture_;
+	std::shared_ptr<sf::Texture> texture_;
 	int8_t amount_mine_near_;
 	bool hasMine_;
 	State state_;

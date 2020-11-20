@@ -1,5 +1,5 @@
 #include "Interface.h"
-
+#include "ResourceManager.h"
 Interface::Interface(): base_color_(sf::Color(20, 20, 20))    
 {
     setupTextLabels();
@@ -8,12 +8,12 @@ Interface::Interface(): base_color_(sf::Color(20, 20, 20))
     setupTitleText();
 }
 
-void Interface::setStopwatch(const int gameTime)
+void Interface::setStopwatch(const int& gameTime)
 {
     stopwatch_.setString(std::to_string(gameTime));
 }
 
-void Interface::setMineAmount(const int mineAmount)
+void Interface::setMineAmount(const int& mineAmount)
 {
     mine_left_.setString(std::to_string(mineAmount));
 }
@@ -29,7 +29,7 @@ void Interface::draw(sf::RenderTarget& target, sf::RenderStates states) const
     target.draw(mine_left_);
     target.draw(background_);
     target.draw(reset_button_);
-    target.draw(title_);
+    target.draw(text_box_);
 }
 
 void Interface::setupTextLabels()
@@ -39,7 +39,6 @@ void Interface::setupTextLabels()
     stopwatch_.setFont(font_);
     stopwatch_.setString(L"0");
     stopwatch_.setPosition(margin * 1.f, 2.f * margin + TILE_SIDE_SIZE * B_HEIGHT);
-    //stopwatch_.setPosition(margin * 1.f, 2.f * margin + TILE_SIDE_SIZE * B_WIDTH);
     stopwatch_.setCharacterSize(50); // in pixels, not points!
     stopwatch_.setFillColor(sf::Color(235, 94, 40));
 
@@ -70,24 +69,24 @@ void Interface::setupResetButton()
 
 void Interface::setupTitleText()
 {
-    title_.setFont(font_);
-    title_.setString("");
-    title_.setPosition(margin * 20.f, 2.f * margin + TILE_SIDE_SIZE * B_HEIGHT);
-    title_.setCharacterSize(50); // in pixels, not points!
-    title_.setFillColor(sf::Color(235, 94, 40));
+    text_box_.setFont(font_);
+    text_box_.setString("");
+    text_box_.setPosition(margin * 20.f, 2.f * margin + TILE_SIDE_SIZE * B_HEIGHT);
+    text_box_.setCharacterSize(50); // in pixels, not points!
+    text_box_.setFillColor(sf::Color(235, 94, 40));
 }
 
 void Interface::showCongatulations()
 {
-    title_.setString(titles_[0]);
+    text_box_.setString(titles_[0]);
 }
 
 void Interface::showRegrets()
 {
-    title_.setString(titles_[1]);
+    text_box_.setString(titles_[1]);
 }
 
 void Interface::resetTitle()
 {
-    title_.setString("");
+    text_box_.setString("");
 }

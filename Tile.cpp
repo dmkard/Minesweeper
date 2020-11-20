@@ -1,9 +1,11 @@
 #include "Tile.h"
+#include <memory>
 
 Tile::Tile(): tile_(sf::Vector2f(static_cast<float>(TILE_SIDE_SIZE), static_cast<float>(TILE_SIDE_SIZE))),
 													hasMine_{false},
 													state_{State::primary},
-													amount_mine_near_{0}
+													amount_mine_near_{0},
+													texture_{nullptr}
 {}
 
 
@@ -12,9 +14,11 @@ void Tile::draw(sf::RenderTarget& target, sf::RenderStates states) const
 	target.draw(tile_);
 }
 
-void Tile::setTexture(sf::Texture& texture)
+void Tile::setTexture(const std::shared_ptr<sf::Texture>& texture)
 {
-	tile_.setTexture(&texture);
+	texture_.reset();
+	texture_ = texture;
+	tile_.setTexture(texture_.get());
 }
 
 void Tile::setPosition(const sf::Vector2f& position)
