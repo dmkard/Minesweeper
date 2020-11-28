@@ -1,5 +1,5 @@
 #include "Tile.h"
-#include <memory>
+
 
 Tile::Tile(): tile_(sf::Vector2f(static_cast<float>(TILE_SIDE_SIZE), static_cast<float>(TILE_SIDE_SIZE))),
 													hasMine_{false},

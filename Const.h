@@ -1,11 +1,11 @@
 #pragma once
-#define W_WIDTH 1550
-#define W_HEIGHT 925
-#define TILE_SIDE_SIZE 50
-#define FRAMERATE 30
-#define MINE_AMOUNT 99
 
+constexpr int TILE_SIDE_SIZE = 50;
+constexpr int FRAMERATE = 30;
+constexpr int MINE_AMOUNT = 99;
+constexpr int B_WIDTH = 30;
+constexpr int B_HEIGHT = 16;
 
-#define B_WIDTH 30
-#define B_HEIGHT 16
-constexpr int margin = (W_WIDTH - B_WIDTH * TILE_SIDE_SIZE) / 2;
+constexpr int B_MARGIN = TILE_SIDE_SIZE / 2;
+constexpr int W_WIDTH = 2 * B_MARGIN + B_WIDTH * TILE_SIDE_SIZE;
+constexpr int W_HEIGHT = 6 * B_MARGIN + B_HEIGHT * TILE_SIDE_SIZE;

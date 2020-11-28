@@ -9,22 +9,6 @@
 class Game
 {
 public:
-	enum class TileType {
-						empty_tile = 0,
-						tile_1 = 1,
-						tile_2 = 2,
-						tile_3 = 3,
-						tile_4 = 4,
-						tile_5 = 5,
-						tile_6 = 6,
-						tile_7 = 7, 
-						tile_8 = 8,
-						flagged_tile = 9,
-						primary_tile = 10,
-						has_mine_tile = 11,
-						wrong_mine_tile = 12,
-						mine_exploded_tile =13
-						};
 	Game();
 	void Run();
 	void HandleInput();
@@ -53,7 +37,6 @@ private:
 
 	sf::RenderWindow window_;
 	Interface interface_;
-	ResourceManager resorce_manager_;
 	sf::Image icon_;
 
 	//std::vector<sf::Texture> tile_textures_;
