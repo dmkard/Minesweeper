@@ -317,7 +317,8 @@ __pycache__/
 *.btm.cs
 *.odx.cs
 *.xsd.cs
-
+*.dll
+*.vcxproj*
 # OpenCover UI analysis results
 OpenCover/
 
