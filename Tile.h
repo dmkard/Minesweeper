@@ -17,7 +17,7 @@ public:
 	void setMine();
 	void resetTile();
 	State state();
-	void increaseBombNear();
+	void incrementMineNearCounter();
 	int8_t amountBombNear();
 	Tile& at(sf::Vector2i gridCoord);
 private:

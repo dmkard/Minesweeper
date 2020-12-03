@@ -48,14 +48,12 @@ void Tile::resetTile()
 	amount_mine_near_ = 0;
 }
 
-
-
 Tile::State Tile::state()
 {
 	 return state_;
 }
 
-void Tile::increaseBombNear()
+void Tile::incrementMineNearCounter()
 {
 	++amount_mine_near_;
 }

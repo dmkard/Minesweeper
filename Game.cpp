@@ -6,36 +6,37 @@
 #include <cmath>
 
 
-Game::Game() :  running_{ false },
+Game::Game() :  window_is_running_{ false },
                 game_started_{false},
                 game_over_{false},
                 field_was_changed_{true},
                 window_(sf::VideoMode(W_WIDTH, W_HEIGHT), "Minesweeper", sf::Style::Titlebar | sf::Style::Close),
-                mine_amount_{ MINE_AMOUNT },
+                mines_to_find_amount_{ MINE_AMOUNT },
                 gameStopwatch_{0},
                 interface_{},
-                tile_revealed_amount_{0}
+                tile_revealed_amount_{0},
+                previousPressedTileGridCoord_{ -1,-1 }
 { 
-    icon_ = *ResourceManager<sf::Image>::Instance().GetResource("resources/icon.png");
-    window_.setIcon(icon_.getSize().x, icon_.getSize().y, icon_.getPixelsPtr());
+    sf::Image icon = *ResourceManager<sf::Image>::Instance().GetResource("resources/icon.png");
+    window_.setIcon(icon.getSize().x, icon.getSize().y, icon.getPixelsPtr());
 }
 
-//A funtion with game loop
 void Game::Run()
 {
     sf::Clock clock;
-    sf::Time endFrameTime;
+    sf::Time endFrameTime {};
     int frameTime = sf::seconds(1).asMilliseconds() / FRAMERATE;
     int frameCounter{};
-    running_ = true;
+    window_is_running_ = true;
     createGameField();
-
-    while (running_)
+    //Game loop
+    while (window_is_running_)
     {
         clock.restart();
 
         if (game_started_)
         {
+            interface_.setMinesToFindAmount(mines_to_find_amount_);
             ++frameCounter;
             if (frameCounter % FRAMERATE == 0)
             {
@@ -44,11 +45,11 @@ void Game::Run()
                 field_was_changed_ = true;
             }
         }
-        interface_.setMineAmount(mine_amount_);
-
+        
         HandleInput();
         Render();
-        endFrameTime = clock.getElapsedTime(); //get elasted time from the start of frame
+
+        endFrameTime = clock.getElapsedTime(); 
         if (endFrameTime.asMilliseconds() < frameTime)
             sf::sleep(sf::milliseconds(frameTime - endFrameTime.asMilliseconds()));
     }
@@ -56,29 +57,22 @@ void Game::Run()
 
 void Game::HandleInput()
 {
-    sf::Event event;
-    
+    //In order to change state under constatnly pressed left mouse button 
+    //handling input for this event use isButtonPressed function
     if (sf::Mouse::isButtonPressed(sf::Mouse::Left))
-    {
         leftMouseButtonPressed(sf::Mouse::getPosition(window_));
-    }
-        
+    
+    sf::Event event;
     while (window_.pollEvent(event))
     {
-
         switch (event.type)
         {
         case sf::Event::MouseButtonPressed:
             field_was_changed_ = true;
             if (sf::Mouse::isButtonPressed(sf::Mouse::Left) && sf::Mouse::isButtonPressed(sf::Mouse::Right))
                 bothMouseButoonPressed({ event.mouseButton.x, event.mouseButton.y });
-
             else if (event.mouseButton.button == sf::Mouse::Right)
                 rightMouseButtonPressed({ event.mouseButton.x, event.mouseButton.y });
-
-            /*else if (sf::Mouse::isButtonPressed(sf::Mouse::Left))
-                leftMouseButtonPressed(sf::Mouse::getPosition(window_));*/
-                
             break;
         case sf::Event::MouseButtonReleased:
             field_was_changed_ = true;
@@ -87,7 +81,7 @@ void Game::HandleInput()
             break;
         case sf::Event::Closed:
             window_.close();
-            running_ = false;
+            window_is_running_ = false;
             break;
         }    
     }
@@ -95,13 +89,15 @@ void Game::HandleInput()
 
 void Game::Render()
 {
+    //render only on changes
     if (field_was_changed_)
     {
-        window_.clear(interface_.baseColor());
+        window_.clear(interface_.backgroundColor());
         window_.draw(interface_);
         for (Tile tile : tiles_)
             window_.draw(tile);
         window_.display();
+        //change variable back to default
         field_was_changed_ = false;
     }
 }
@@ -109,7 +105,7 @@ void Game::Render()
 //A function create B_HEIGHT*B_WIDTH tiles
 void Game::createGameField()
 {
-    //it creates tiles and sets default texture to each of them
+    //Creates tiles, sets default texture and move each of them for vector of tiles
     for (int i = 0; i < B_HEIGHT; ++i)
     {
         for (int j = 0; j <B_WIDTH; ++j)
@@ -118,7 +114,6 @@ void Game::createGameField()
             sf::Vector2f position({ static_cast<float>(j * TILE_SIDE_SIZE + B_MARGIN) },
                 { static_cast<float>(i * TILE_SIDE_SIZE + B_MARGIN) });
 
-         
             tile.setTexture(ResourceManager<sf::Texture>::Instance().GetResource("resources/primary_tile.png"));
             tile.setPosition(position);
 
@@ -131,12 +126,10 @@ void Game::resetGameField()
 {
     game_started_ = false;
     game_over_ = false;
-    mine_amount_ = MINE_AMOUNT;
+    mines_to_find_amount_ = MINE_AMOUNT;
     gameStopwatch_ = 0;
     tile_revealed_amount_ = 0;
-
-    interface_.setStopwatch(gameStopwatch_);
-    interface_.resetTitle();
+    interface_.resetCounters();
 
     for (int i = 0; i < B_HEIGHT; ++i)
     {
@@ -147,11 +140,10 @@ void Game::resetGameField()
             tile.setTexture(ResourceManager<sf::Texture>::Instance().GetResource("resources/primary_tile.png"));
         }
     }
-
     field_was_changed_ = true;
 }
 
-//A function randomly sets 99 Mine on early created tites
+//Randomly sets mines on field, except 3x3 area around pressed tile
 void Game::initializeMine(const sf::Vector2i& startGridCoord)
 {
     int mineLeft = MINE_AMOUNT;
@@ -166,8 +158,7 @@ void Game::initializeMine(const sf::Vector2i& startGridCoord)
         int index = randomMinePos.y * B_WIDTH + randomMinePos.x; //calculate index in order to access to correct tile in vector of tiles
         int initial_index = startGridCoord.y * B_WIDTH + startGridCoord.x;
 
-        //this bool variable holds information if the index is in a tile radius around a pressed tile
-        //if so, this index have to be skipped, in order to initialize basic condition of the game properly
+        //Check if randomly generated tile is in 3x3 area around pressed tile
         bool isAroundFirstTile = (  (index == initial_index) ||
                                     (index == initial_index + 1) ||
                                     (index == initial_index - 1) ||
@@ -186,37 +177,29 @@ void Game::initializeMine(const sf::Vector2i& startGridCoord)
     }
 }
 
-//A function reveal tile after a left mouse button click
+//Reveals tile after a left mouse button click
 void Game::revealTile(const sf::Vector2i& tileGridCoord)
 {
-    if (tileAt(tileGridCoord).state() == Tile::State::primary)
+    if (tileAt(tileGridCoord).state() == Tile::State::pressed)
     {
-        //opening of the first tile on board start the game
+        tileAt(tileGridCoord).changeTileState(Tile::State::revealed);
+
         if (!game_started_)
         {
             game_started_ = true;
             initializeMine(tileGridCoord);
             countAmountMineNear();
         }
-        
-        tileAt(tileGridCoord).changeTileState(Tile::State::revealed);
 
-        //the situation when we clicked on mine
+        //situation when we hited the mine
         if (tileAt(tileGridCoord).hasMine()) 
-        {
             mineExploded(tileGridCoord);
-        }
         else 
         {
+            //if this tile an empty tile
             if (tileAt(tileGridCoord).amountBombNear() == 0)
             {
                 ++tile_revealed_amount_;
-                if (tile_revealed_amount_ == B_WIDTH * B_HEIGHT - MINE_AMOUNT)
-                {
-                    game_started_ = false;
-                    game_over_ = true;
-                    interface_.showCongatulations();
-                }
                 tileAt(tileGridCoord).setTexture(ResourceManager<sf::Texture>::Instance().GetResource("resources/empty_tile.png"));
                 revealTilesNear(tileGridCoord);
             }
@@ -225,50 +208,44 @@ void Game::revealTile(const sf::Vector2i& tileGridCoord)
                 ++tile_revealed_amount_;
                 std::string tile_path = "resources/tile_" + std::to_string(tileAt(tileGridCoord).amountBombNear()) + ".png";
                 tileAt(tileGridCoord).setTexture(ResourceManager<sf::Texture>::Instance().GetResource(tile_path));
-                if (tile_revealed_amount_ == B_WIDTH * B_HEIGHT - MINE_AMOUNT)
-                {
-                    game_started_ = false;
-                    game_over_ = true;
-                    interface_.showCongatulations();
-                }
-            }  
+            }
+
+            //check for a win state
+            if (tile_revealed_amount_ == B_WIDTH * B_HEIGHT - MINE_AMOUNT)
+            {
+                game_started_ = false;
+                game_over_ = true;
+            }
         }
     } 
 }
 
-bool Game::isValidGridCoord(const sf::Vector2i& tileGridCoord)
+//Reveal 3x3(if it posible) area around the tile with eventGridCoord coordinates
+void Game::revealTilesNear(const sf::Vector2i& eventGridCoord)
 {
-    return tileGridCoord.x >=0 && tileGridCoord.x < B_WIDTH
-            && tileGridCoord.y >=0 && tileGridCoord.y < B_HEIGHT;
-}
+    //finding a range of cheching to prevent out of range access
+    int xStart = std::max(0, eventGridCoord.x - 1);
+    int yStart = std::max(0, eventGridCoord.y - 1);
+    int xEnd = std::min(eventGridCoord.x + 1, B_WIDTH - 1);
+    int yEnd = std::min(eventGridCoord.y + 1, B_HEIGHT - 1);
 
-bool Game::isResetButton(const sf::Vector2i& eventCoord)
-{
-    return eventCoord.x > B_MARGIN + TILE_SIDE_SIZE * (B_WIDTH - 1) &&
-            eventCoord.x < B_MARGIN + TILE_SIDE_SIZE * B_WIDTH &&
-            eventCoord.y > 2.f * B_MARGIN + TILE_SIDE_SIZE * B_HEIGHT &&
-            eventCoord.y < 2.f * B_MARGIN + TILE_SIDE_SIZE * (B_HEIGHT+1);
-}
-
-//A function convert regular coordinates to grid coordinates
- sf::Vector2i Game::coordToGridCoord(const sf::Vector2i& coord)
-{
-     int xCoord = (coord.x - B_MARGIN);
-     int yCoord = (coord.y - B_MARGIN);
-     if (xCoord < 0)
-         xCoord -= TILE_SIDE_SIZE;
-     if (yCoord < 0)
-         yCoord -= TILE_SIDE_SIZE;
-
-     return{  xCoord / TILE_SIDE_SIZE, yCoord / TILE_SIDE_SIZE };
+    for (int yPos = yStart; yPos <= yEnd; ++yPos)
+    {
+        for (int xPos = xStart; xPos <= xEnd; ++xPos)
+        {
+            if (tileAt({ xPos, yPos }).state() == Tile::State::primary)
+            {
+                tileAt({ xPos, yPos }).changeTileState(Tile::State::pressed);
+                revealTile({ xPos, yPos });
+            }
+        }     
+    }
 }
 
  void Game::mineExploded(const sf::Vector2i& tileGridCoord)
  {
      game_started_ = false;
      game_over_ = true;
-     interface_.showRegrets();
-     int index_texture{};
      for (int i = 0; i < B_HEIGHT; ++i)
      {
          for (int j = 0; j < B_WIDTH; ++j)
@@ -283,52 +260,34 @@ bool Game::isResetButton(const sf::Vector2i& eventCoord)
      tileAt(tileGridCoord).setTexture(ResourceManager<sf::Texture>::Instance().GetResource("resources/mine_exploded_tile.png"));
  }
 
- /*
- void Game::mineExploded(const sf::Vector2i& tileGridCoord)
+ //Finds tiles with mines and increment counter of mines around for not-mine tiles
+ void Game::countAmountMineNear()
  {
-     game_started_ = false;
-     game_over_ = true;
-     interface_.showRegrets();
-     int index_texture{};
-     int maxRayLength = sqrt(pow(B_HEIGHT,2)+ pow(B_WIDTH,2))*2;
-
-     index_texture = static_cast<int> (TileType::mine_exploded_tile);
-     tileAt(tileGridCoord).setTexture(tile_textures_[index_texture]);
-
-     for (int i = 1; i < maxRayLength + 1; ++i)
+     for (int i = 0; i < B_HEIGHT; ++i)
      {
-         double checkAmount = 4.f * ((i/2.f) + 1);
-         double angleStep = 360 / checkAmount;
-         std::cout << "Circle N" << i << std::endl;
-         for (double j = 0; j < 360; j+=angleStep)
+         for (int j = 0; j < B_WIDTH; ++j)
          {
-             double inRadians = 3.1415 * j / 180;
-
-             sf::Vector2i coord({static_cast<int>(cos(inRadians)*i* TILE_SIDE_SIZE), 
-                 static_cast<int>(-(sin(inRadians) * i * TILE_SIDE_SIZE ))});
-             
-             sf::Vector2i gridCoord = tileGridCoord + coordToGridCoord(coord);
-             if (isValidGridCoord(gridCoord))
+             if (tileAt({ j, i }).hasMine())
              {
-                 if (tileAt(gridCoord).state() == Tile::State::flagged && !tileAt(gridCoord).hasMine())
+                 //finding a range of cheching to prevent out of range access
+                 int xStart = std::max(0, j - 1);
+                 int yStart = std::max(0, i - 1);
+                 int xEnd = std::min(j + 1, B_WIDTH - 1);
+                 int yEnd = std::min(i + 1, B_HEIGHT - 1);
+                 for (int yPos = yStart; yPos <= yEnd; ++yPos)
                  {
-                     index_texture = static_cast<int> (TileType::wrong_mine_tile);
-                     tileAt(gridCoord).setTexture(tile_textures_[index_texture]);
-                 }
-                 else if (tileAt(gridCoord).hasMine() && tileAt(gridCoord).state() != Tile::State::flagged)
-                 {
-                     index_texture = static_cast<int> (TileType::has_mine_tile);
-                     tileAt(gridCoord).setTexture(tile_textures_[index_texture]);
+                     for (int xPos = xStart; xPos <= xEnd; ++xPos)
+                     {
+                         if (!tileAt({ xPos, yPos }).hasMine())
+                             tileAt({ xPos, yPos }).incrementMineNearCounter();
+                     }
                  }
              }
          }
-         field_was_changed_ = true;
-         sf::sleep(sf::milliseconds(50));
-         Render();
      }
- }*/
+ }
 
- //A function changes state and texture after right mousebuttonpressed event
+ //Changes state and texture after right mousebuttonpressed event
 void Game::rightMouseButtonPressed(const sf::Vector2i& eventCoord)
 {
     sf::Vector2i eventGridCoord = coordToGridCoord(eventCoord);
@@ -338,60 +297,57 @@ void Game::rightMouseButtonPressed(const sf::Vector2i& eventCoord)
         if (tileAt(eventGridCoord).state() == Tile::State::primary)
         {
             tileAt(eventGridCoord).setTexture(ResourceManager<sf::Texture>::Instance().GetResource("resources/flagged_tile.png"));
-
             tileAt(eventGridCoord).changeTileState(Tile::State::flagged);
-            --mine_amount_;
+            --mines_to_find_amount_;
         }
         else if (tileAt(eventGridCoord).state() == Tile::State::flagged)
         {
             tileAt(eventGridCoord).setTexture(ResourceManager<sf::Texture>::Instance().GetResource("resources/primary_tile.png"));
             tileAt(eventGridCoord).changeTileState(Tile::State::primary);
-            ++mine_amount_;
+            ++mines_to_find_amount_;
         }
     }
 }
 
-//A function changes state and texture on tile after left mousebutttonpressed event
+//Changes state and texture on tile after left mousebutttonpressed event
 void Game::leftMouseButtonPressed(const sf::Vector2i& eventCoord)
 {
     sf::Vector2i eventGridCoord = coordToGridCoord(eventCoord);
   
+    //Prevents pressing the field if game is over 
     if (!game_over_ )
     {
         field_was_changed_ = true;
-        if ( eventGridCoord != previousPressedTile_)
+        //if we pressed new tile
+        if ( eventGridCoord != previousPressedTileGridCoord_)
         {
-            if (isValidGridCoord(previousPressedTile_) &&
-                tileAt(previousPressedTile_).state() != Tile::State::revealed)
+            //we set to default state previously pressed tile
+            if (isValidGridCoord(previousPressedTileGridCoord_) &&
+                tileAt(previousPressedTileGridCoord_).state() != Tile::State::revealed)
             {
-                tileAt(previousPressedTile_).setTexture(ResourceManager<sf::Texture>::Instance().GetResource("resources/primary_tile.png"));
-                tileAt(previousPressedTile_).changeTileState(Tile::State::primary);
+                tileAt(previousPressedTileGridCoord_).setTexture(ResourceManager<sf::Texture>::Instance().GetResource("resources/primary_tile.png"));
+                tileAt(previousPressedTileGridCoord_).changeTileState(Tile::State::primary);
             }
-            previousPressedTile_ = eventGridCoord;
+            //and assign new previous tile
+            previousPressedTileGridCoord_ = eventGridCoord;
         }
 
-        if (isValidGridCoord(eventGridCoord))
+        //check if tile able to be pressed, and if so, we change its state
+        if (isValidGridCoord(eventGridCoord) && tileAt(eventGridCoord).state() == Tile::State::primary)
         {
-            if (tileAt(eventGridCoord).state() == Tile::State::primary)
-            {
-                tileAt(eventGridCoord).setTexture(ResourceManager<sf::Texture>::Instance().GetResource("resources/empty_tile.png"));
-                //tileAt(eventGridCoord).setTexture(tile_textures_[static_cast<int>(TileType::empty_tile)]);
-                tileAt(eventGridCoord).changeTileState(Tile::State::pressed);
-            }
+            tileAt(eventGridCoord).setTexture(ResourceManager<sf::Texture>::Instance().GetResource("resources/empty_tile.png"));
+            tileAt(eventGridCoord).changeTileState(Tile::State::pressed);
         }
     }
-
 }
 
-//A function changes state of a tile and reveal it after left mousebutttonreleasef event
-//but if user will move mouse to another tile after pressing on some tile, pressed one will be revealed 
 void Game::leftMouseButtonReleased(const sf::Vector2i& eventCoord)
 {
+    
     sf::Vector2i eventGridCoord = coordToGridCoord(eventCoord);
     if (isValidGridCoord(eventGridCoord) &&
         tileAt(eventGridCoord).state() == Tile::State::pressed)
     {
-        tileAt(eventGridCoord).changeTileState(Tile::State::primary);
         revealTile(eventGridCoord);
     }
     else//one tile was pressed, so program have to find it in order to finish sequence: pressed->released
@@ -401,14 +357,11 @@ void Game::leftMouseButtonReleased(const sf::Vector2i& eventCoord)
             for (int j = 0; j < B_WIDTH; ++j)
             {
                 if (tileAt({ j,i }).state() == Tile::State::pressed)
-                {
-                    tileAt({ j, i }).changeTileState(Tile::State::primary);
-                    revealTile({ j, i });
-                }    
+                    revealTile({ j, i }); 
             }
         }
     }
-    if (isResetButton(eventCoord))
+    if (interface_.isResetButton(eventCoord))
         resetGameField();
 }
 
@@ -438,55 +391,32 @@ void Game::bothMouseButoonPressed(const sf::Vector2i& eventCoord)
     }
 }
 
-void Game::countAmountMineNear()
+bool Game::isValidGridCoord(const sf::Vector2i& tileGridCoord)
 {
-    for (int i = 0; i < B_HEIGHT; ++i)
-    {
-        for (int j = 0; j < B_WIDTH; ++j)
-        {
-            if (tileAt({ j, i }).hasMine()) 
-            {
-                //finding a range of cheching to prevent out of range access
-                int xStart = std::max(0, j - 1);
-                int yStart = std::max(0, i - 1);
-                int xEnd = std::min(j + 1, B_WIDTH - 1);
-                int yEnd = std::min(i + 1, B_HEIGHT - 1);
-                for (int yPos = yStart; yPos <= yEnd; ++yPos)
-                {
-                    for (int xPos = xStart; xPos <= xEnd; ++xPos)
-                    {
-                        if (!tileAt({ xPos, yPos }).hasMine())
-                            tileAt({ xPos, yPos }).increaseBombNear();
-                    }
-                }
-            }
-        }
-    }
+    return tileGridCoord.x >= 0 && tileGridCoord.x < B_WIDTH
+        && tileGridCoord.y >= 0 && tileGridCoord.y < B_HEIGHT;
 }
 
-//A function returns a reference to a tile with (x,y) grid coordinates
+//A functions returns a reference to a tile with (x,y) grid coordinates
 Tile& Game::tileAt(sf::Vector2i& gridCoord)
 {
-    return tiles_[(gridCoord.y * B_WIDTH) + gridCoord.x];
+    return tiles_[(gridCoord.y * size_t(B_WIDTH)) + gridCoord.x];
 }
 
 Tile& Game::tileAt(const sf::Vector2i& gridCoord) 
 {
-    return tiles_[(gridCoord.y * B_WIDTH) + gridCoord.x];
+    return tiles_[(gridCoord.y * size_t(B_WIDTH)) + gridCoord.x];
 }
 
-void Game::revealTilesNear(const sf::Vector2i& eventGridCoord)
+//A function convert regular coordinates to grid coordinates
+sf::Vector2i Game::coordToGridCoord(const sf::Vector2i& coord)
 {
-    int xStart = std::max(0, eventGridCoord.x - 1);
-    int yStart = std::max(0, eventGridCoord.y - 1);
-    int xEnd = std::min(eventGridCoord.x + 1, B_WIDTH - 1);
-    int yEnd = std::min(eventGridCoord.y + 1, B_HEIGHT - 1);
+    int xCoord = (coord.x - B_MARGIN);
+    int yCoord = (coord.y - B_MARGIN);
+    if (xCoord < 0)
+        xCoord -= TILE_SIDE_SIZE;
+    if (yCoord < 0)
+        yCoord -= TILE_SIDE_SIZE;
 
-    for (int yPos = yStart; yPos <= yEnd; ++yPos)
-    {
-        for (int xPos = xStart; xPos <= xEnd; ++xPos)
-        {
-            revealTile({ xPos, yPos });
-        }
-    }
+    return{ xCoord / TILE_SIDE_SIZE, yCoord / TILE_SIDE_SIZE };
 }

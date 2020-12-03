@@ -4,103 +4,123 @@ Interface::Interface()
 {
     setupColorPalette();
     setupTextLabels();
-    setupBackground();
+    setupBoardBackground();
     setupResetButton();
-    setupTitleText();
 }
-
 
 void Interface::draw(sf::RenderTarget& target, sf::RenderStates states) const
 {
 	target.draw(stopwatch_);
-    target.draw(mine_left_);
-    target.draw(background_);
+    target.draw(mines_to_find_left_);
+    target.draw(board_background_);
     target.draw(reset_button_);
-    target.draw(text_box_);
 }
 
 void Interface::setupColorPalette()
 {
-    base_color_ = sf::Color(20, 20, 20);
+    background_color_ = sf::Color(20, 20, 20);
     interface_color_ = sf::Color(235, 94, 40);
-    background_board_color_ = sf::Color(134, 130, 121);
+    board_background_board_color_ = sf::Color(134, 130, 121);
 }
 
 void Interface::setupTextLabels()
 {
+    text_font_ = *ResourceManager<sf::Font>::Instance().GetResource("resources/inv.ttf");
 
-    font_ = *ResourceManager<sf::Font>::Instance().GetResource("resources/inv.ttf");
+    // every symbol in this font is empty for a 45 percent
+    float topEmptyness = 0.45; 
+    //calculate required size of font in order to be the same as text_font_size_
+    unsigned adapted_text_font_size = text_font_size_  / (1-topEmptyness); 
 
-    stopwatch_.setFont(font_);
-    stopwatch_.setString(L"0");
-    std::wcout << font_size_;
-    //stopwatch_.setOrigin({ 0 * 1.f, font_size_*0.30666f});
-    stopwatch_.setPosition(B_MARGIN * 1.f,  TILE_SIDE_SIZE * B_HEIGHT);
-   // stopwatch_.setPosition(B_MARGIN * 1.f, W_HEIGHT-font_size_);
-
-    stopwatch_.setCharacterSize(100); // in pixels, not points!
+    stopwatch_.setOrigin({ 0 * 1.f, adapted_text_font_size * topEmptyness });
+    stopwatch_.setFont(text_font_);
+    setStopwatch(0);
+    stopwatch_.setPosition(B_MARGIN * 1.f, TILE_SIDE_SIZE * B_HEIGHT + 2.f * B_MARGIN);
+    stopwatch_.setCharacterSize(adapted_text_font_size); 
     stopwatch_.setFillColor(interface_color_);
 
-    mine_left_.setFont(font_);
-    mine_left_.setString(std::to_string(MINE_AMOUNT));
-    mine_left_.setPosition(B_MARGIN * 10.f, 1.f * B_MARGIN + TILE_SIDE_SIZE * B_HEIGHT);
-    mine_left_.setCharacterSize((B_MARGIN * 3)/0.694); // in pixels, not points!
-    mine_left_.setFillColor(interface_color_);
+    mines_to_find_left_.setFont(text_font_);
+    setMinesToFindAmount(MINE_AMOUNT);
+    mines_to_find_left_.setOrigin({ 0 * 1.f, adapted_text_font_size * topEmptyness });
+    mines_to_find_left_.setPosition(W_WIDTH - B_MARGIN - 250, TILE_SIDE_SIZE * B_HEIGHT + 2.f * B_MARGIN);
+    mines_to_find_left_.setCharacterSize(adapted_text_font_size); 
+    mines_to_find_left_.setFillColor(interface_color_);
 }
 
-void Interface::setupBackground()
+void Interface::setupBoardBackground()
 {
-    float outlineThicknessCoefficient = 0.96f; // lower coefficient means lower thickness
-    background_.setSize({ B_WIDTH * TILE_SIDE_SIZE + B_MARGIN * (1 - outlineThicknessCoefficient),
-                            B_HEIGHT * TILE_SIDE_SIZE + B_MARGIN * (1 - outlineThicknessCoefficient) });
-    background_.setPosition({ B_MARGIN * outlineThicknessCoefficient,
-                                B_MARGIN * outlineThicknessCoefficient });
-    background_.setFillColor(background_board_color_);
+    float outlineThicknessCoefficient = 0.1f; // higher coefficient means lower thickness
+    board_background_.setSize({ B_WIDTH * TILE_SIDE_SIZE + B_MARGIN *  outlineThicknessCoefficient,
+                            B_HEIGHT * TILE_SIDE_SIZE + B_MARGIN *  outlineThicknessCoefficient });
+    board_background_.setPosition({ B_MARGIN * (1 - outlineThicknessCoefficient/2), B_MARGIN * (1 - outlineThicknessCoefficient/2) });
+    board_background_.setFillColor(board_background_board_color_);
 }
 
 void Interface::setupResetButton()
 {
-    button_texture_ = *ResourceManager<sf::Texture>::Instance().GetResource("resources/icon.png");
-    reset_button_.setSize({ font_size_ * 1.f, font_size_ * 1.f }); // reset button has the same size as all text in interface
-    reset_button_.setPosition({W_WIDTH - B_MARGIN - font_size_*1.f,
-                                2.f * B_MARGIN + TILE_SIDE_SIZE * B_HEIGHT });
-    reset_button_.setTexture(&button_texture_);
+    reset_button_.setSize({ button_size_ * 1.f, button_size_ * 1.f }); // reset button has the same size as all text in interface
+    reset_button_.setPosition({W_WIDTH/2.f - button_size_/2,
+                                1.5f * B_MARGIN + TILE_SIDE_SIZE * B_HEIGHT });
+    reset_button_.setTexture(&(*ResourceManager<sf::Texture>::Instance().GetResource("resources/icon.png")));
 }
 
-void Interface::setupTitleText()
-{
-    text_box_.setFont(font_);
-    text_box_.setString("");
-    text_box_.setPosition(B_MARGIN * 20.f, 2.f * B_MARGIN + TILE_SIDE_SIZE * B_HEIGHT);
-    text_box_.setCharacterSize(font_size_); 
-    text_box_.setFillColor(interface_color_);
-}
-
-void Interface::showCongatulations()
-{
-    text_box_.setString(titles_[0]);
-}
-
-void Interface::showRegrets()
-{
-    text_box_.setString(titles_[1]);
-}
-
-void Interface::resetTitle()
-{
-    text_box_.setString("");
-}
+//Shows stopwatch with the appropriate number of zeros at the beginning
 void Interface::setStopwatch(const int& gameTime)
 {
-    stopwatch_.setString(std::to_string(gameTime));
+    std::string stopwatch{};
+    if (gameTime < 10)
+        stopwatch = "00" + std::to_string(gameTime);
+    else if (gameTime >= 10 && gameTime <= 99)
+        stopwatch = "0" + std::to_string(gameTime);
+    else if (gameTime >= 100 && gameTime <= 999)
+        stopwatch = std::to_string(gameTime);
+    else
+        stopwatch = "999";
+
+    stopwatch_.setString(stopwatch);
 }
 
-void Interface::setMineAmount(const int& mineAmount)
+//Shows amount of mines left to find on field with the appropriate number of zeros at the beginning
+void Interface::setMinesToFindAmount(const int& minesToFindAmount)
 {
-    mine_left_.setString(std::to_string(mineAmount));
+    std::string minesToFindLeftCounter{};
+    if (minesToFindAmount >= 100)
+        minesToFindLeftCounter = "" + std::to_string(minesToFindAmount);
+
+    else if (minesToFindAmount >= 10 && minesToFindAmount <= 99)
+        minesToFindLeftCounter = "0" + std::to_string(minesToFindAmount);
+
+    else if (minesToFindAmount >= 0 && minesToFindAmount <= 9)
+        minesToFindLeftCounter = "00" + std::to_string(minesToFindAmount);
+
+    else if (minesToFindAmount <= -1 && minesToFindAmount >= -9)
+        minesToFindLeftCounter = "-0" + std::to_string(minesToFindAmount - 2 * minesToFindAmount);
+
+    else if (minesToFindAmount <= -10 && minesToFindAmount >= -99)
+        minesToFindLeftCounter = std::to_string(minesToFindAmount);
+
+    else if (minesToFindAmount < -99)
+        minesToFindLeftCounter = "-99";
+
+    mines_to_find_left_.setString(minesToFindLeftCounter);
 }
 
-sf::Color Interface::baseColor()
+bool Interface::isResetButton(const sf::Vector2i& eventCoord)
 {
-    return base_color_;
+    return eventCoord.x >= reset_button_.getPosition().x &&
+            eventCoord.x <= reset_button_.getPosition().x + reset_button_.getSize().x &&
+            eventCoord.y >= reset_button_.getPosition().y &&
+            eventCoord.y <= reset_button_.getPosition().y + reset_button_.getSize().y;
+}
+
+sf::Color Interface::backgroundColor()
+{
+    return background_color_;
+}
+
+void Interface::resetCounters()
+{
+    //back to default values
+    setStopwatch(0);
+    setMinesToFindAmount(MINE_AMOUNT);
 }
